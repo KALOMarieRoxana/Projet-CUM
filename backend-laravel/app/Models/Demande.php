@@ -9,12 +9,11 @@ class Demande extends Model
 {
     use HasFactory;
 
-    protected $table = 'demandes';
     protected $primaryKey = 'id_demande';
 
     protected $fillable = [
-        'user_id',
-        'type_acte_id',
+        'reference',
+        'citoyen_id',
         'demandeur_nom',
         'demandeur_prenom',
         'demandeur_adresse',
@@ -22,30 +21,93 @@ class Demande extends Model
         'demandeur_contact',
         'personne_nom',
         'personne_prenom',
-        'personne_numero_acte',
         'personne_lieu_naissance',
         'personne_date_naissance',
         'service',
-        'prix',
+        'prix_total',
+        'nombre_actes',
         'statut',
         'date_traitement',
+        'commentaire_admin',
+        'traite_par',
     ];
 
     protected $casts = [
         'personne_date_naissance' => 'date',
         'date_traitement' => 'datetime',
-        'prix' => 'decimal:2',
+        'prix_total' => 'decimal:2',
     ];
 
-    // Relation avec l'utilisateur
-    public function utilisateur()
+    // ============================================================
+    // RELATIONS
+    // ============================================================
+    public function citoyen()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Citoyen::class, 'citoyen_id', 'id_citoyens');
     }
 
-    // Relation avec le type d'acte
-    public function typeActe()
+    public function traiteur()
     {
-        return $this->belongsTo(TypeActe::class, 'type_acte_id');
+        return $this->belongsTo(User::class, 'traite_par');
+    }
+
+    public function actes()
+    {
+        return $this->hasMany(DemandeActe::class, 'demande_id', 'id_demande');
+    }
+
+    // ============================================================
+    // SCOPES
+    // ============================================================
+    public function scopeEnAttente($query)
+    {
+        return $query->where('statut', 'en_attente');
+    }
+
+    public function scopeAcceptee($query)
+    {
+        return $query->where('statut', 'acceptée');
+    }
+
+    public function scopeRefusee($query)
+    {
+        return $query->where('statut', 'refusée');
+    }
+
+    // ============================================================
+    // ACCESSORS
+    // ============================================================
+    public function getStatutLibelleAttribute()
+    {
+        return match($this->statut) {
+            'en_attente' => 'En attente',
+            'acceptée' => 'Acceptée',
+            'refusée' => 'Refusée',
+            'partiellement_acceptée' => 'Partiellement acceptée',
+            default => $this->statut,
+        };
+    }
+
+    public function getStatutCouleurAttribute()
+    {
+        return match($this->statut) {
+            'en_attente' => 'warning',
+            'acceptée' => 'success',
+            'refusée' => 'danger',
+            'partiellement_acceptée' => 'info',
+            default => 'secondary',
+        };
+    }
+
+    // ============================================================
+    // GÉNÉRATION DE RÉFÉRENCE
+    // ============================================================
+    public static function generateReference()
+    {
+        $prefix = 'DEM';
+        $year = date('Y');
+        $month = date('m');
+        $random = strtoupper(substr(uniqid(), -6));
+        return $prefix . $year . $month . '-' . $random;
     }
 }

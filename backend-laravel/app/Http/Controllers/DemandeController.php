@@ -8,16 +8,72 @@ use App\Models\Demande;
 use App\Models\TypeActe;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class DemandeController extends Controller
 {
+    // ==========================================
+    // PARTIE WEB (Tableau de Bord / Back-Office)
+    // ==========================================
+
+    /**
+     * Affiche la liste des demandes dans l'espace administration.
+     */
+    public function index(Request $request)
+    {
+        $query = Demande::with(['user', 'typeActe']);
+
+        // Filtrage par statut si passé en paramètre
+        if ($request->filled('statut') && $request->statut !== 'tous') {
+            $query->where('statut', $request->statut);
+        }
+
+        $demandes = $query->latest()->paginate(15);
+
+        // Si la requête attend du JSON (API)
+        if ($request->wantsJson()) {
+            return response()->json(['demandes' => $demandes], 200);
+        }
+
+        // Sinon retour de la vue Blade
+        return view('admin.demandes', compact('demandes'));
+    }
+
+    /**
+     * Met à jour le statut d'une demande (Accepter / Refuser).
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'statut' => 'required|string',
+        ]);
+
+        $demande = Demande::findOrFail($id);
+        $demande->update([
+            'statut' => $request->statut,
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Statut mis à jour avec succès.',
+                'demande' => $demande
+            ], 200);
+        }
+
+        return redirect()->back()->with('success', 'Le statut de la demande a été mis à jour.');
+    }
+
+
+    // ==========================================
+    // PARTIE API (Utilisateurs / Client Mobile/Front)
+    // ==========================================
+
     /**
      * Créer une nouvelle demande
      */
     public function store(StoreDemandeRequest $request)
     {
         try {
-            // Récupérer l'utilisateur connecté
             $user = Auth::user();
 
             if (!$user) {
@@ -25,11 +81,9 @@ class DemandeController extends Controller
                     'message' => 'Utilisateur non authentifié.'
                 ], 401);
             }
-            // Log pour deboguer
-              \Log::info('Utilisateur connecté:', ['user_id' => $user->id, 'email' => $user->email]);
-        
 
-            // Récupérer le type d'acte
+            Log::info('Utilisateur connecté:', ['user_id' => $user->id, 'email' => $user->email]);
+
             $typeActe = TypeActe::where('type_acte', $request->type_acte)->first();
             if (!$typeActe) {
                 return response()->json([
@@ -37,12 +91,10 @@ class DemandeController extends Controller
                 ], 400);
             }
 
-            // Calculer le prix en fonction du service
             $prix = $request->service === 'express' 
                 ? $typeActe->prix_express 
                 : $typeActe->prix_standard;
 
-            // Créer la demande
             $demande = Demande::create([
                 'user_id' => $user->id,
                 'type_acte_id' => $typeActe->id,
@@ -61,7 +113,6 @@ class DemandeController extends Controller
                 'statut' => 'en attente',
             ]);
 
-            // Charger la relation typeActe pour la réponse
             $demande->load('typeActe');
 
             return response()->json([
@@ -106,18 +157,28 @@ class DemandeController extends Controller
     {
         try {
             $user = Auth::user();
-            $demande = Demande::where('user_id', $user->id)
-                ->with('typeActe')
-                ->findOrFail($id);
 
-            return response()->json([
-                'demande' => $demande
-            ], 200);
+            // Si c'est un administrateur, il peut voir n'importe quelle demande
+            if ($user && ($user->role === 'admin' || $user->role === 'super_admin')) {
+                $demande = Demande::with(['typeActe', 'user'])->findOrFail($id);
+            } else {
+                // Sinon l'utilisateur ne peut voir que sa propre demande
+                $demande = Demande::where('user_id', $user->id)
+                    ->with('typeActe')
+                    ->findOrFail($id);
+            }
+
+            if (request()->wantsJson()) {
+                return response()->json(['demande' => $demande], 200);
+            }
+
+            return view('admin.demandes_show', compact('demande'));
 
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Demande non trouvée.'
-            ], 404);
+            if (request()->wantsJson()) {
+                return response()->json(['message' => 'Demande non trouvée.'], 404);
+            }
+            return redirect()->back()->with('error', 'Demande non trouvée.');
         }
     }
 

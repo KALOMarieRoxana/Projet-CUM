@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -11,14 +12,17 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->append(\App\Http\Middleware\CorsLocal::class);
-
+    ->withMiddleware(function (Middleware $middleware) {
+        // 👇 ENREGISTREMENT DU MIDDLEWARE
         $middleware->alias([
-            'role.admin' => \App\Http\Middleware\VerifierRoleAdmin::class,
+            'role' => \App\Http\Middleware\CheckRole::class,
         ]);
     })
-
-    ->withExceptions(function (Exceptions $exceptions): void {
-        //
+    ->withExceptions(function (Exceptions $exceptions) {
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if ($e instanceof \Illuminate\Auth\AuthenticationException) {
+                return redirect()->route('login');
+            }
+            return null;
+        });
     })->create();
