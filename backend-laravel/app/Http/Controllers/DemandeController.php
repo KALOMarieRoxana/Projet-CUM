@@ -96,7 +96,7 @@ class DemandeController extends Controller
                 : $typeActe->prix_standard;
 
             $demande = Demande::create([
-                'user_id' => $user->id,
+                'id_citoyen' => $citoyen->id,
                 'type_acte_id' => $typeActe->id,
                 'demandeur_nom' => $request->demandeur_nom,
                 'demandeur_prenom' => $request->demandeur_prenom,
@@ -133,8 +133,15 @@ class DemandeController extends Controller
     public function mesDemandes(Request $request)
     {
         try {
-            $user = Auth::user();
-            $demandes = Demande::where('user_id', $user->id)
+            $citoyen = $request->user();
+
+            if (!$citoyen) {
+                return response()->json([
+                    'message' => 'Citoyen non authentifié.'
+                ], 401);
+            }
+
+            $demandes = Demande::where('citoyen_id', $citoyen->id)
                 ->with('typeActe')
                 ->orderBy('created_at', 'desc')
                 ->get();

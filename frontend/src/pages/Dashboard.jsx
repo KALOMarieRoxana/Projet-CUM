@@ -72,6 +72,8 @@ export default function Dashboard() {
       ]);
       setProfilDetaille(resProfil.data.utilisateur);
       setMesDemandes(resDemandes.data.demandes);
+
+      console.log('Profil détaillé:', resProfil.data.utilisateur);
     } catch (err) {
       setErreur('Impossible de charger vos données.');
     } finally {
