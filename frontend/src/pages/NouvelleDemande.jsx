@@ -7,7 +7,8 @@ import {
   User, Phone, MapPin, Mail, Bell, Settings, ChevronRight,
   Zap, Shield, TrendingUp, AlertCircle, Home, ChevronDown,
   UserCircle, Edit, HelpCircle, Award, Key, X, Eye, EyeOff,
-  ArrowLeft, Send, Save, Calendar
+  ArrowLeft, Send, Save, Calendar, Trash2, ShoppingCart,
+  Heart, Users, HeartPulse, Scale
 } from 'lucide-react';
 import logo from '../assets/image/logo.png';
 
@@ -18,6 +19,76 @@ const LABELS_TYPE = {
   divorce: 'Acte de divorce',
 };
 
+const OPTIONS_RELATION = [
+  { value: 'moi_meme', label: 'Moi-même' },
+  { value: 'parent', label: 'Parent (père/mère)' },
+  { value: 'frere', label: 'Frère' },
+  { value: 'soeur', label: 'Sœur' },
+  { value: 'cousin', label: 'Cousin' },
+  { value: 'cousine', label: 'Cousine' },
+  { value: 'tuteur', label: 'Tuteur / Tutrice' },
+  { value: 'epoux', label: 'Époux / Épouse' },
+  { value: 'enfant', label: 'Enfant' },
+  { value: 'autre', label: 'Autre' },
+];
+
+// --- CHAMPS SPÉCIFIQUES POUR CHAQUE TYPE D'ACTE ---
+const CHAMPS_SPECIFIQUES = {
+  naissance: [
+    { name: 'personne_sexe', label: 'Sexe', type: 'select', options: [{ value: 'M', label: 'Masculin' }, { value: 'F', label: 'Féminin' }], required: true },
+    { name: 'pere_nom', label: 'Nom du père', type: 'text', required: true, placeholder: 'Ex: KOUADIO' },
+    { name: 'pere_prenom', label: 'Prénom du père', type: 'text', required: true, placeholder: 'Ex: Pierre' },
+    { name: 'mere_nom', label: 'Nom de la mère', type: 'text', required: true, placeholder: 'Ex: KOUADIO' },
+    { name: 'mere_prenom', label: 'Prénom de la mère', type: 'text', required: true, placeholder: 'Ex: Marie' },
+  ],
+  mariage: [
+    { name: 'epoux_nom', label: 'Nom de l\'époux', type: 'text', required: true, placeholder: 'Ex: KOUADIO' },
+    { name: 'epoux_prenom', label: 'Prénom de l\'époux', type: 'text', required: true, placeholder: 'Ex: Jean' },
+    { name: 'epoux_lieu_naissance', label: 'Lieu naissance époux', type: 'text', required: true, placeholder: 'Ex: Abidjan' },
+    { name: 'epoux_date_naissance', label: 'Date naissance époux', type: 'date', required: true },
+    { name: 'epouse_nom', label: 'Nom de l\'épouse', type: 'text', required: true, placeholder: 'Ex: KOUADIO' },
+    { name: 'epouse_prenom', label: 'Prénom de l\'épouse', type: 'text', required: true, placeholder: 'Ex: Sophie' },
+    { name: 'epouse_lieu_naissance', label: 'Lieu naissance épouse', type: 'text', required: true, placeholder: 'Ex: Bouaké' },
+    { name: 'epouse_date_naissance', label: 'Date naissance épouse', type: 'date', required: true },
+    { name: 'date_mariage', label: 'Date du mariage', type: 'date', required: true },
+    { name: 'lieu_mariage', label: 'Lieu du mariage', type: 'text', required: true, placeholder: 'Ex: Mairie de Cocody' },
+  ],
+  deces: [
+    { name: 'defunt_nom', label: 'Nom du défunt', type: 'text', required: true, placeholder: 'Ex: KOUADIO' },
+    { name: 'defunt_prenom', label: 'Prénom du défunt', type: 'text', required: true, placeholder: 'Ex: Jean' },
+    { name: 'defunt_lieu_naissance', label: 'Lieu naissance défunt', type: 'text', required: true, placeholder: 'Ex: Abidjan' },
+    { name: 'defunt_date_naissance', label: 'Date naissance défunt', type: 'date', required: true },
+    { name: 'date_deces', label: 'Date du décès', type: 'date', required: true },
+    { name: 'lieu_deces', label: 'Lieu du décès', type: 'text', required: true, placeholder: 'Ex: CHU de Treichville' },
+    { name: 'cause_deces', label: 'Cause du décès', type: 'text', required: false, placeholder: 'Ex: Accident de la route' },
+  ],
+  divorce: [
+    { name: 'conjoint_nom', label: 'Nom du conjoint', type: 'text', required: true, placeholder: 'Ex: KOUADIO' },
+    { name: 'conjoint_prenom', label: 'Prénom du conjoint', type: 'text', required: true, placeholder: 'Ex: Jean' },
+    { name: 'conjointe_nom', label: 'Nom de la conjointe', type: 'text', required: true, placeholder: 'Ex: KOUADIO' },
+    { name: 'conjointe_prenom', label: 'Prénom de la conjointe', type: 'text', required: true, placeholder: 'Ex: Marie' },
+    { name: 'date_mariage', label: 'Date du mariage', type: 'date', required: true },
+    { name: 'date_demande_divorce', label: 'Date demande divorce', type: 'date', required: true },
+    { name: 'motif', label: 'Motif du divorce', type: 'text', required: false, placeholder: 'Ex: Incompatibilité d\'humeur' },
+  ],
+};
+
+// --- PRIX PAR TYPE ET SERVICE ---
+const PRIX = {
+  naissance: { standard: 5000, express: 10000 },
+  mariage: { standard: 7000, express: 12000 },
+  deces: { standard: 5000, express: 10000 },
+  divorce: { standard: 8000, express: 15000 },
+};
+
+// --- ICÔNES POUR CHAQUE TYPE ---
+const ICONES_TYPE = {
+  naissance: User,
+  mariage: Heart,
+  deces: HeartPulse,
+  divorce: Scale,
+};
+
 export default function NouvelleDemande() {
   const { utilisateur, deconnecter } = useAuth();
   const navigate = useNavigate();
@@ -26,26 +97,41 @@ export default function NouvelleDemande() {
   const [soumission, setSoumission] = useState(false);
   const [erreur, setErreur] = useState('');
   const [succes, setSucces] = useState('');
+  const [progression, setProgression] = useState('');
+  const [typesActes, setTypesActes] = useState([]);
 
   // Menu profil
   const [menuProfilOuvert, setMenuProfilOuvert] = useState(false);
   const menuRef = useRef(null);
 
-  // ---- État du formulaire ----
+  // ---- État du formulaire (informations communes) ----
   const [form, setForm] = useState({
     demandeur_nom: '',
     demandeur_prenom: '',
     demandeur_adresse: '',
-    demandeur_relation: '',
+    demandeur_relation: 'moi_meme',
     demandeur_contact: '',
     personne_nom: '',
     personne_prenom: '',
     personne_numero_acte: '',
     personne_lieu_naissance: '',
     personne_date_naissance: '',
-    type_acte: 'naissance',
     service: 'standard',
   });
+
+  // ---- État pour les champs spécifiques de l'acte en cours d'ajout ----
+  const [detailsActe, setDetailsActe] = useState({});
+
+  // ---- Sélecteur d'ajout d'acte ----
+  const [selectionActe, setSelectionActe] = useState({
+    type_acte: 'naissance',
+    quantite: 1,
+  });
+
+  // ---- Liste des actes ajoutés (panier) ----
+  const [actesAjoutes, setActesAjoutes] = useState([]);
+
+  const estMoiMeme = form.demandeur_relation === 'moi_meme';
 
   // ---- Gestion du clic hors menu ----
   useEffect(() => {
@@ -67,6 +153,30 @@ export default function NouvelleDemande() {
     chargerProfil();
   }, [utilisateur, navigate]);
 
+  // ---- Chargement des types d'actes ----
+  useEffect(() => {
+    const chargerTypesActes = async () => {
+      try {
+        const res = await api.get('/types-actes');
+        setTypesActes(res.data.types || []);
+      } catch (err) {
+        console.error('Erreur chargement types actes:', err);
+        setTypesActes([]);
+      }
+    };
+    chargerTypesActes();
+  }, []);
+
+  // ---- Réinitialiser les détails quand le type d'acte change ----
+  useEffect(() => {
+    const champs = CHAMPS_SPECIFIQUES[selectionActe.type_acte] || [];
+    const initialDetails = {};
+    champs.forEach(champ => {
+      initialDetails[champ.name] = '';
+    });
+    setDetailsActe(initialDetails);
+  }, [selectionActe.type_acte]);
+
   const chargerProfil = async () => {
     try {
       setChargement(true);
@@ -78,8 +188,9 @@ export default function NouvelleDemande() {
         demandeur_nom: user.nom || '',
         demandeur_prenom: user.prenom || '',
         demandeur_adresse: user.adresse || '',
-        demandeur_relation: user.relation || '',
         demandeur_contact: user.contact || '',
+        personne_nom: user.nom || '',
+        personne_prenom: user.prenom || '',
       }));
     } catch (err) {
       setErreur('Impossible de charger votre profil.');
@@ -88,7 +199,93 @@ export default function NouvelleDemande() {
     }
   };
 
-  // ---- VÉRIFICATION DE L'AUTHENTIFICATION (NOUVEAU) ----
+  // ---- Quand la relation change, gérer le cas "Moi-même" ----
+  useEffect(() => {
+    if (estMoiMeme) {
+      setForm(prev => ({
+        ...prev,
+        personne_nom: prev.demandeur_nom,
+        personne_prenom: prev.demandeur_prenom,
+      }));
+    }
+  }, [form.demandeur_relation, form.demandeur_nom, form.demandeur_prenom]);
+
+  // ---- Gestion des champs communs ----
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  // ---- Gestion des champs spécifiques ----
+  const handleDetailsChange = (e) => {
+    const { name, value } = e.target;
+    setDetailsActe(prev => ({ ...prev, [name]: value }));
+  };
+
+  // ---- Gestion du sélecteur d'ajout d'acte ----
+  const handleSelectionActeChange = (e) => {
+    const { name, value } = e.target;
+    setSelectionActe(prev => ({
+      ...prev,
+      [name]: name === 'quantite' ? Math.max(1, parseInt(value) || 1) : value,
+    }));
+  };
+
+  // ---- Ajouter un acte au panier ----
+  const ajouterActe = () => {
+    // Vérifier que tous les champs obligatoires sont remplis
+    const champs = CHAMPS_SPECIFIQUES[selectionActe.type_acte] || [];
+    const champsObligatoires = champs.filter(c => c.required);
+    const champsManquants = champsObligatoires.filter(champ => !detailsActe[champ.name]?.trim());
+
+    if (champsManquants.length > 0) {
+      setErreur(`Veuillez remplir tous les champs obligatoires pour ${LABELS_TYPE[selectionActe.type_acte]}: ${champsManquants.map(c => c.label).join(', ')}`);
+      return;
+    }
+
+    setActesAjoutes(prev => {
+      const existant = prev.find(a => a.type_acte === selectionActe.type_acte);
+      if (existant) {
+        return prev.map(a =>
+          a.type_acte === selectionActe.type_acte
+            ? { ...a, quantite: a.quantite + selectionActe.quantite }
+            : a
+        );
+      }
+      return [...prev, { ...selectionActe, details: { ...detailsActe } }];
+    });
+
+    // Réinitialiser les détails après ajout
+    const champsReset = CHAMPS_SPECIFIQUES[selectionActe.type_acte] || [];
+    const initialDetails = {};
+    champsReset.forEach(champ => {
+      initialDetails[champ.name] = '';
+    });
+    setDetailsActe(initialDetails);
+    setErreur('');
+  };
+
+  // ---- Retirer un acte du panier ----
+  const retirerActe = (type_acte) => {
+    setActesAjoutes(prev => prev.filter(a => a.type_acte !== type_acte));
+  };
+
+  // ---- Modifier la quantité d'un acte déjà ajouté ----
+  const modifierQuantite = (type_acte, quantite) => {
+    const q = Math.max(1, parseInt(quantite) || 1);
+    setActesAjoutes(prev => prev.map(a =>
+      a.type_acte === type_acte ? { ...a, quantite: q } : a
+    ));
+  };
+
+  // ---- Calcul du prix total ----
+  const totalActes = actesAjoutes.reduce((sum, a) => sum + a.quantite, 0);
+  const prixTotal = actesAjoutes.reduce((sum, a) => {
+    const prix = PRIX[a.type_acte]?.[form.service] || 0;
+    return sum + (prix * a.quantite);
+  }, 0);
+
+  // ---- Vérification de l'authentification ----
   const verifierAuthentification = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -114,12 +311,6 @@ export default function NouvelleDemande() {
     }
   };
 
-  // ---- Gestion des champs ----
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-  };
-
   // ---- Soumission avec vérification ----
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -127,79 +318,92 @@ export default function NouvelleDemande() {
     setSucces('');
     setSoumission(true);
 
-    // 1️⃣ Vérifier l'authentification avant tout
+    // 1️⃣ Vérifier l'authentification
     const estAuthentifie = await verifierAuthentification();
     if (!estAuthentifie) {
       setSoumission(false);
       return;
     }
 
-    // 2️⃣ Vérifier les champs obligatoires
-    const required = [
-      'demandeur_nom', 'demandeur_prenom', 'demandeur_adresse',
-      'personne_nom', 'personne_prenom', 'personne_lieu_naissance',
-      'personne_date_naissance', 'type_acte', 'service'
-    ];
-    const manquant = required.filter(field => !form[field]?.trim());
-    if (manquant.length) {
-      setErreur('Veuillez remplir tous les champs obligatoires.');
+    // 2️⃣ Vérifier qu'au moins un acte a été ajouté
+    if (actesAjoutes.length === 0) {
+      setErreur('Veuillez ajouter au moins un acte à votre demande.');
       setSoumission(false);
       return;
     }
 
-    // 3️⃣ Vérifier le token
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setErreur('Token d\'authentification manquant. Veuillez vous reconnecter.');
-      navigate('/connexion');
+    // 3️⃣ Vérifier les champs obligatoires communs
+    const requisDemandeur = ['demandeur_nom', 'demandeur_prenom', 'demandeur_adresse', 'demandeur_contact'];
+    const requisPersonne = ['personne_nom', 'personne_prenom', 'personne_lieu_naissance', 'personne_date_naissance'];
+    const requis = [...requisDemandeur, ...requisPersonne];
+
+    const manquant = requis.filter(field => !form[field]?.trim());
+    if (manquant.length) {
+      setErreur(
+        estMoiMeme
+          ? 'Veuillez compléter les informations manquantes (lieu et date de naissance notamment).'
+          : 'Veuillez remplir tous les champs obligatoires.'
+      );
+      setSoumission(false);
+      return;
+    }
+
+    // 4️⃣ Construire le payload
+    const payload = {
+      demandeur_nom: form.demandeur_nom,
+      demandeur_prenom: form.demandeur_prenom,
+      demandeur_adresse: form.demandeur_adresse,
+      demandeur_relation: OPTIONS_RELATION.find(o => o.value === form.demandeur_relation)?.label || form.demandeur_relation,
+      demandeur_contact: form.demandeur_contact,
+      service: form.service,
+      demandes: actesAjoutes.map(acte => ({
+        type_acte_id: typesActes.find(t => t.type_acte === acte.type_acte)?.id,
+        quantite: acte.quantite,
+        details: acte.details,
+      }))
+    };
+
+    // Vérifier que tous les type_acte_id sont résolus
+    const invalides = payload.demandes.filter(d => !d.type_acte_id);
+    if (invalides.length > 0) {
+      setErreur('Les types d\'actes ne sont pas encore chargés. Veuillez réessayer dans un instant.');
       setSoumission(false);
       return;
     }
 
     try {
-      // 4️⃣ Préparer et envoyer la demande
-      const payload = {
-        demandeur_nom: form.demandeur_nom,
-        demandeur_prenom: form.demandeur_prenom,
-        demandeur_adresse: form.demandeur_adresse,
-        demandeur_relation: form.demandeur_relation,
-        demandeur_contact: form.demandeur_contact,
-        personne_nom: form.personne_nom,
-        personne_prenom: form.personne_prenom,
-        personne_numero_acte: form.personne_numero_acte,
-        personne_lieu_naissance: form.personne_lieu_naissance,
-        personne_date_naissance: form.personne_date_naissance,
-        type_acte: form.type_acte,
-        service: form.service,
-      };
+      setProgression('📤 Envoi de la demande groupée...');
 
-      console.log('📤 Envoi de la demande:', payload);
-      console.log('🔑 Token utilisé:', token);
+      const response = await api.post('/demandes/groupe', payload);
+      console.log('✅ Demande groupée envoyée:', response.data);
 
-      const response = await api.post('/demandes', payload);
-      console.log('✅ Réponse:', response.data);
-      
-      setSucces('Demande envoyée avec succès !');
+      setProgression('');
+      setSucces(
+        `✅ Demande groupée envoyée avec succès !\n\n` +
+        `📌 Référence : ${response.data.reference}\n` +
+        `💰 Prix total : ${new Intl.NumberFormat('fr-FR').format(response.data.prix_total)} FCFA\n` +
+        `📋 ${actesAjoutes.reduce((sum, a) => sum + a.quantite, 0)} acte(s) demandé(s)\n\n` +
+        `Votre demande a bien été transmise à l'administration.\n` +
+        `Vous recevrez une réponse dans quelques minutes.`
+      );
+
       setTimeout(() => {
         navigate('/tableau-de-bord');
-      }, 2000);
+      }, 5000);
+
     } catch (err) {
-      console.error('❌ Erreur complète:', err);
-      console.error('📦 Réponse erreur:', err.response);
-      
-      // Gérer les différentes erreurs
+      console.error('❌ Erreur:', err);
+
       if (err.response?.status === 401) {
         setErreur('Session expirée. Veuillez vous reconnecter.');
         localStorage.removeItem('token');
         setTimeout(() => navigate('/connexion'), 2000);
       } else if (err.response?.status === 422) {
-        // Erreur de validation
         const errors = err.response.data.errors || {};
-        const messages = Object.values(errors).flat().join(', ');
+        const messages = Object.values(errors).flat().join(' ');
         setErreur(`Erreur de validation: ${messages}`);
       } else {
-        const message = err.response?.data?.message || 'Erreur lors de l\'envoi de la demande.';
-        setErreur(message);
+        setErreur(err.response?.data?.message || 'Erreur lors de l\'envoi de la demande groupée.');
       }
     } finally {
       setSoumission(false);
@@ -230,6 +434,10 @@ export default function NouvelleDemande() {
       </div>
     );
   }
+
+  // Récupérer les champs spécifiques pour le type d'acte sélectionné
+  const champsSpecifiques = CHAMPS_SPECIFIQUES[selectionActe.type_acte] || [];
+  const IconeType = ICONES_TYPE[selectionActe.type_acte] || FileText;
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F3F4F6', color: '#1F2937', fontFamily: 'Inter, sans-serif' }}>
@@ -428,8 +636,17 @@ export default function NouvelleDemande() {
           </div>
         )}
         {succes && (
-          <div style={{ padding: '12px 16px', borderRadius: 10, background: '#D1FAE5', border: '1px solid #10B981', color: '#065F46', fontSize: 13, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <CheckCircle size={15} /> {succes}
+          <div style={{ padding: '16px 20px', borderRadius: 12, background: '#D1FAE5', border: '1px solid #10B981', color: '#065F46', fontSize: 13, marginBottom: 24, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <CheckCircle size={20} style={{ flexShrink: 0, marginTop: 2 }} />
+            <div style={{ whiteSpace: 'pre-line' }}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>🎉 Demande envoyée !</div>
+              <div>{succes}</div>
+            </div>
+          </div>
+        )}
+        {progression && (
+          <div style={{ padding: '12px 16px', borderRadius: 10, background: '#EEF2FF', border: '1px solid #6366F1', color: '#4338CA', fontSize: 13, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Clock size={15} /> {progression}
           </div>
         )}
 
@@ -480,17 +697,17 @@ export default function NouvelleDemande() {
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Relation</label>
-                <input
-                  type="text"
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Relation avec la personne concernée *</label>
+                <select
                   name="demandeur_relation"
                   value={form.demandeur_relation}
                   onChange={handleChange}
-                  placeholder="Ex: père, mère, tuteur..."
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13, color: '#111827', background: '#F9FAFB', outline: 'none', transition: 'border-color 0.2s' }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = '#6366F1'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = '#E5E7EB'}
-                />
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13, color: '#111827', background: '#F9FAFB', outline: 'none', cursor: 'pointer' }}
+                >
+                  {OPTIONS_RELATION.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Contact *</label>
@@ -511,10 +728,15 @@ export default function NouvelleDemande() {
 
           {/* Section : Personne concernée */}
           <div style={{ marginBottom: 24 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
               <User size={18} color="#8B5CF6" />
               Personne concernée par l'acte
             </h3>
+            {estMoiMeme && (
+              <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 16px 0', fontStyle: 'italic' }}>
+                Vous avez choisi "Moi-même" : votre nom et prénom sont déjà renseignés. Complétez uniquement les informations manquantes ci-dessous.
+              </p>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Nom *</label>
@@ -523,8 +745,14 @@ export default function NouvelleDemande() {
                   name="personne_nom"
                   value={form.personne_nom}
                   onChange={handleChange}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13, color: '#111827', background: '#F9FAFB', outline: 'none', transition: 'border-color 0.2s' }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = '#6366F1'}
+                  readOnly={estMoiMeme}
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #E5E7EB',
+                    fontSize: 13, color: '#111827', background: estMoiMeme ? '#F3F4F6' : '#F9FAFB',
+                    outline: 'none', transition: 'border-color 0.2s',
+                    cursor: estMoiMeme ? 'not-allowed' : 'text'
+                  }}
+                  onFocus={(e) => !estMoiMeme && (e.currentTarget.style.borderColor = '#6366F1')}
                   onBlur={(e) => e.currentTarget.style.borderColor = '#E5E7EB'}
                 />
               </div>
@@ -535,8 +763,14 @@ export default function NouvelleDemande() {
                   name="personne_prenom"
                   value={form.personne_prenom}
                   onChange={handleChange}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13, color: '#111827', background: '#F9FAFB', outline: 'none', transition: 'border-color 0.2s' }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = '#6366F1'}
+                  readOnly={estMoiMeme}
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #E5E7EB',
+                    fontSize: 13, color: '#111827', background: estMoiMeme ? '#F3F4F6' : '#F9FAFB',
+                    outline: 'none', transition: 'border-color 0.2s',
+                    cursor: estMoiMeme ? 'not-allowed' : 'text'
+                  }}
+                  onFocus={(e) => !estMoiMeme && (e.currentTarget.style.borderColor = '#6366F1')}
                   onBlur={(e) => e.currentTarget.style.borderColor = '#E5E7EB'}
                 />
               </div>
@@ -581,29 +815,156 @@ export default function NouvelleDemande() {
 
           <hr style={{ border: 'none', borderTop: '1px solid #E5E7EB', margin: '24px 0' }} />
 
-          {/* Section : Type d'acte */}
+          {/* ============================================================ */}
+          {/* Section : Ajout d'actes avec champs spécifiques (PANIER) */}
+          {/* ============================================================ */}
           <div style={{ marginBottom: 24 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: '0 0 16px 0' }}>Type d'acte demandé *</h3>
-            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-              {[
-                { value: 'naissance', label: 'Acte de naissance' },
-                { value: 'mariage', label: 'Acte de mariage' },
-                { value: 'deces', label: 'Acte de décès' },
-                { value: 'divorce', label: 'Acte de divorce' },
-              ].map(({ value, label }) => (
-                <label key={value} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#1F2937' }}>
-                  <input
-                    type="radio"
-                    name="type_acte"
-                    value={value}
-                    checked={form.type_acte === value}
-                    onChange={handleChange}
-                    style={{ accentColor: '#4F46E5', width: 16, height: 16, cursor: 'pointer' }}
-                  />
-                  {label}
-                </label>
-              ))}
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ShoppingCart size={18} color="#4F46E5" />
+              Actes demandés *
+            </h3>
+
+            {/* Sélecteur d'ajout */}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
+              <div style={{ flex: 2, minWidth: 200 }}>
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Type d'acte</label>
+                <select
+                  name="type_acte"
+                  value={selectionActe.type_acte}
+                  onChange={handleSelectionActeChange}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13, color: '#111827', background: '#F9FAFB', outline: 'none', cursor: 'pointer' }}
+                >
+                  {Object.entries(LABELS_TYPE).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ width: 100 }}>
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>Quantité</label>
+                <input
+                  type="number"
+                  name="quantite"
+                  min="1"
+                  value={selectionActe.quantite}
+                  onChange={handleSelectionActeChange}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13, color: '#111827', background: '#F9FAFB', outline: 'none' }}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={ajouterActe}
+                style={{
+                  padding: '10px 20px', borderRadius: 8, border: 'none',
+                  background: '#4F46E5', color: '#fff', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6,
+                  height: 38
+                }}
+              >
+                <Plus size={15} /> Ajouter
+              </button>
             </div>
+
+            {/* 🔥 CHAMPS SPÉCIFIQUES DYNAMIQUES */}
+            {champsSpecifiques.length > 0 && (
+              <div style={{
+                marginBottom: 16,
+                padding: '16px 20px',
+                background: '#F8FAFC',
+                borderRadius: 10,
+                border: '2px solid #E2E8F0'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <IconeType size={18} color="#4F46E5" />
+                  <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#111827' }}>
+                    Détails pour {LABELS_TYPE[selectionActe.type_acte]}
+                  </h4>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  {champsSpecifiques.map(champ => (
+                    <div key={champ.name} style={{ gridColumn: champ.type === 'textarea' ? 'span 2' : 'span 1' }}>
+                      <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>
+                        {champ.label} {champ.required && <span style={{ color: '#DC2626' }}>*</span>}
+                      </label>
+                      {champ.type === 'select' ? (
+                        <select
+                          name={champ.name}
+                          value={detailsActe[champ.name] || ''}
+                          onChange={handleDetailsChange}
+                          style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13, color: '#111827', background: '#FFFFFF', outline: 'none', cursor: 'pointer' }}
+                        >
+                          <option value="">Sélectionnez...</option>
+                          {champ.options.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={champ.type}
+                          name={champ.name}
+                          value={detailsActe[champ.name] || ''}
+                          onChange={handleDetailsChange}
+                          placeholder={champ.placeholder}
+                          style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13, color: '#111827', background: '#FFFFFF', outline: 'none', transition: 'border-color 0.2s' }}
+                          onFocus={(e) => e.currentTarget.style.borderColor = '#6366F1'}
+                          onBlur={(e) => e.currentTarget.style.borderColor = '#E5E7EB'}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Liste des actes ajoutés */}
+            {actesAjoutes.length === 0 ? (
+              <div style={{ padding: '16px', borderRadius: 8, border: '1px dashed #E5E7EB', textAlign: 'center', color: '#9CA3AF', fontSize: 13 }}>
+                Aucun acte ajouté pour le moment. Remplissez les champs ci-dessus et cliquez sur "Ajouter".
+              </div>
+            ) : (
+              <div style={{ border: '1px solid #E5E7EB', borderRadius: 8, overflow: 'hidden' }}>
+                {actesAjoutes.map((acte, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 14px',
+                      borderBottom: idx < actesAjoutes.length - 1 ? '1px solid #F3F4F6' : 'none',
+                      background: '#FAFAFA'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <FileText size={15} color="#4F46E5" />
+                      <span style={{ fontSize: 13, color: '#111827', fontWeight: 500 }}>{LABELS_TYPE[acte.type_acte]}</span>
+                      <span style={{ fontSize: 11, color: '#6B7280' }}>
+                        {new Intl.NumberFormat('fr-FR').format(PRIX[acte.type_acte]?.[form.service] || 0)} FCFA
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <label style={{ fontSize: 12, color: '#6B7280' }}>Qté :</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={acte.quantite}
+                        onChange={(e) => modifierQuantite(acte.type_acte, e.target.value)}
+                        style={{ width: 56, padding: '4px 8px', borderRadius: 6, border: '1px solid #E5E7EB', fontSize: 13, textAlign: 'center' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => retirerActe(acte.type_acte)}
+                        style={{ border: 'none', background: 'transparent', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                        aria-label="Retirer cet acte"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <div style={{ padding: '10px 14px', background: '#EEF2FF', fontSize: 13, fontWeight: 600, color: '#4338CA', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Total : {totalActes} exemplaire(s)</span>
+                  <span>Prix total : {new Intl.NumberFormat('fr-FR').format(prixTotal)} FCFA</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <hr style={{ border: 'none', borderTop: '1px solid #E5E7EB', margin: '24px 0' }} />
@@ -676,7 +1037,7 @@ export default function NouvelleDemande() {
               }}
             >
               <Send size={16} />
-              {soumission ? 'Envoi en cours...' : 'Envoyer la demande'}
+              {soumission ? 'Envoi en cours...' : `Envoyer (${totalActes} acte${totalActes > 1 ? 's' : ''})`}
             </button>
           </div>
         </form>

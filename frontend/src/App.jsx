@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import MesDemandes from './pages/MesDemandes'; 
 import NouvelleDemande from './pages/NouvelleDemande';
 import AdminDemandes from './pages/AdminDemandes';
 import Home from './pages/Home';
@@ -21,6 +22,7 @@ function AppRoutes() {
       <Route path="/connexion" element={<Login />} />
       <Route path="/inscription" element={<Register />} />
       <Route path="/tableau-de-bord" element={<RouteProtegee><Dashboard /></RouteProtegee>} />
+      <Route path="/mes-demandes" element={<RouteProtegee><MesDemandes /></RouteProtegee>} />
       <Route path="/nouvelle-demande" element={<RouteProtegee><NouvelleDemande /></RouteProtegee>} />
       <Route path="/admin/demandes" element={<RouteProtegee><AdminDemandes /></RouteProtegee>} />
       <Route path="*" element={<Navigate to="/" replace />} />
