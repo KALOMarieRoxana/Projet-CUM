@@ -8,6 +8,7 @@ use App\Http\Controllers\DemandeController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
 
 Auth::routes();
 

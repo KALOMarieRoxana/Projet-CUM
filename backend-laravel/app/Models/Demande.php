@@ -4,10 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Dtatabase\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Demande extends Model
 {
     use HasFactory;
+    /**
+     * Nom de la table associée au modèle
+     */
+    protected $table = 'demandes';
+
+    /**
+     * Clé primaire de la table
+     */
 
     protected $primaryKey = 'id_demande';
 
@@ -34,24 +44,27 @@ class Demande extends Model
 
     protected $casts = [
         'personne_date_naissance' => 'date',
+        'nombre_actes' => 'integer',
         'date_traitement' => 'datetime',
         'prix_total' => 'decimal:2',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     // ============================================================
-    // RELATIONS
+    // RELATIONS ELOQUENT
     // ============================================================
-    public function citoyen()
+    public function citoyen(): BelongsTo
     {
-        return $this->belongsTo(Citoyen::class, 'citoyen_id', 'id_citoyens');
+        return $this->belongsTo(Citoyen::class, 'citoyen_id');
     }
 
-    public function traiteur()
+    public function traiteur(): BelongsTo
     {
         return $this->belongsTo(User::class, 'traite_par');
     }
 
-    public function actes()
+    public function demandeActes(): HasMany
     {
         return $this->hasMany(DemandeActe::class, 'demande_id', 'id_demande');
     }
@@ -109,5 +122,14 @@ class Demande extends Model
         $month = date('m');
         $random = strtoupper(substr(uniqid(), -6));
         return $prefix . $year . $month . '-' . $random;
+    }
+    /**
+     * Recalcule et met à jour automatiquement le prix total et le nombre d'actes
+     */
+    public function calculerTotaux(): void
+    {
+        $this->nombre_actes = $this->demandeActes()->sum('quantite');
+        $this->prix_total   = $this->demandeActes()->sum('sous_total');
+        $this->save();
     }
 }
