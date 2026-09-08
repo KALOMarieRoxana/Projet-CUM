@@ -57,6 +57,11 @@ Route::middleware(['auth', 'role:admin'])
             DashboardController::class,
             'adminIndex'
         ])->name('dashboard');
+        // AJOUTEZ CETTE ROUTE POUR LA MISE À JOUR DES PRIX :
+        Route::put('/services/prices', [
+            DashboardController::class, 
+            'updatePrices'
+        ])->name('services.update-prices');
 
         Route::get('/demandes', [
             DemandeController::class,

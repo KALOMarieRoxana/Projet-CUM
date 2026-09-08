@@ -13,19 +13,25 @@ class DashboardController extends Controller
      */
     public function adminIndex(Request $request)
     {
-        // Remplacement de 'user' par 'citoyen'
-        $query = Demande::with('citoyen');
+        // Initialisation du Query Builder avec Eager Loading
+        $query = Demande::with([
+            'citoyen',
+            'demandeActes.typeActeRelation',
+            'demandeActes.acte'
+        ]); // <-- Point-virgule ajouté ici pour corriger l'erreur de syntaxe
 
+        // Filtrage par statut si demandé dans l'URL
         if ($request->has('statut') && $request->statut !== 'tous') {
             $query->where('statut', $request->statut);
         }
 
         $demandes = $query->latest()->get();
 
-        $totalDemandes = Demande::count();
-        $demandesEnAttente = Demande::where('statut', 'en_attente')->count();
-        $demandesAcceptees = Demande::where('statut', 'acceptee')->count();
-        $demandesRefusees = Demande::where('statut', 'refusee')->count();
+        // Statistiques globales
+        $totalDemandes     = Demande::count();
+        $demandesEnAttente = Demande::enAttente()->count();
+        $demandesAcceptees = Demande::acceptee()->count();
+        $demandesRefusees  = Demande::refusee()->count();
 
         return view('admin.dashboard', compact(
             'demandes',
@@ -35,6 +41,25 @@ class DashboardController extends Controller
             'demandesRefusees'
         ));
     }
+    /**
+     * Mettre à jour le prix des services.
+     */
+    public function updatePrices(Request $request)
+    {
+        $request->validate([
+            'tarifs' => 'required|array',
+            'tarifs.*' => 'required|numeric|min:0',
+        ]);
+        // Exemple si vous sauvegardez dans la table `type_actes` ou `services` :
+        foreach ($request->tarifs as $serviceKey => $prix) {
+            // Ajustez le nom de votre modèle et colonne selon votre base de données
+            // Par exemple si vous avez un modèle TypeActe :
+            \App\Models\TypeActe::where('type_acte', $serviceKey)
+                ->update(['prix_unitaire' => $prix]);
+        }
+
+        return redirect()->back()->with('success', 'Les tarifs des services ont été mis à jour avec succès.');
+    }
 
     /**
      * Dashboard propre au Super Admin
@@ -42,22 +67,27 @@ class DashboardController extends Controller
     public function superAdminIndex(Request $request)
     {
         // Statistiques globales du système
-        $totalAdmins = User::where('role', 'admin')->count();
-        $totalDemandes = Demande::count();
-        $demandesEnAttente = Demande::where('statut', 'en_attente')->count();
-        $demandesAcceptees = Demande::where('statut', 'acceptee')->count();
-        $demandesRefusees = Demande::where('statut', 'refusee')->count();
-        // Récupération des derniers admins et des dernières demandes
+        $totalAdmins       = User::where('role', 'admin')->count();
+        $totalDemandes     = Demande::count();
+        $demandesEnAttente = Demande::enAttente()->count();
+        $demandesAcceptees = Demande::acceptee()->count();
+        $demandesRefusees  = Demande::refusee()->count();
+
+        // Récupération des derniers admins enregistrés
         $admins = User::where('role', 'admin')->latest()->take(5)->get();
         
-        // Remplacement de 'user' par 'citoyen'
-        $demandes = Demande::with('citoyen')->latest()->take(5)->get();
+        // Dernières demandes avec Eager Loading
+        $demandes = Demande::with([
+            'citoyen', 
+            'demandeActes.typeActeRelation'
+        ])->latest()->take(5)->get();
 
         return view('super-admin.dashboard', compact(
             'totalAdmins',
             'totalDemandes',
             'demandesEnAttente',
             'demandesAcceptees',
+            'demandesRefusees',
             'admins',
             'demandes'
         ));

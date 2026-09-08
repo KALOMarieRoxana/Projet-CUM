@@ -10,18 +10,53 @@ class TypeActe extends Model
     use HasFactory;
 
     protected $table = 'type_actes';
-    protected $primaryKey = 'id';
 
     protected $fillable = [
         'nom',
         'type_acte',
-        'prix_standard',
-        'prix_express',
+        'sigle',
+        'montantStandardMG',
+        'montantExpressMG',
+        'montantStandardFR',
+        'montantExpressFR',
     ];
 
-    // Relation avec les demandes
-    public function demandes()
+    protected $casts = [
+        'montantStandardMG' => 'decimal:2',
+        'montantExpressMG'  => 'decimal:2',
+        'montantStandardFR' => 'decimal:2',
+        'montantExpressFR'  => 'decimal:2',
+    ];
+
+    /**
+     * Calcule le prix unitaire selon la langue et le mode de traitement
+     *
+     * @param string $langue  ('MG' ou 'FR')
+     * @param string $mode    ('standard' ou 'express')
+     * @return float
+     */
+    public function getPrix(string $langue = 'MG', string $mode = 'standard'): float
     {
-        return $this->hasMany(Demande::class, 'type_acte_id');
+        $langue = strtoupper($langue);
+        $mode   = strtolower($mode);
+
+        if ($langue === 'FR') {
+            return (float) ($mode === 'express' ? $this->montantExpressFR : $this->montantStandardFR);
+        }
+
+        return (float) ($mode === 'express' ? $this->montantExpressMG : $this->montantStandardMG);
+    }
+
+    /**
+     * Calcule le prix total en fonction de la quantité
+     *
+     * @param int $quantite
+     * @param string $langue
+     * @param string $mode
+     * @return float
+     */
+    public function getPrixTotal(int $quantite = 1, string $langue = 'MG', string $mode = 'standard'): float
+    {
+        return $this->getPrix($langue, $mode) * $quantite;
     }
 }
