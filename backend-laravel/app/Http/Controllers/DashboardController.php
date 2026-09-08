@@ -13,7 +13,8 @@ class DashboardController extends Controller
      */
     public function adminIndex(Request $request)
     {
-        $query = Demande::with('user');
+        // Remplacement de 'user' par 'citoyen'
+        $query = Demande::with('citoyen');
 
         if ($request->has('statut') && $request->statut !== 'tous') {
             $query->where('statut', $request->statut);
@@ -45,10 +46,12 @@ class DashboardController extends Controller
         $totalDemandes = Demande::count();
         $demandesEnAttente = Demande::where('statut', 'en_attente')->count();
         $demandesAcceptees = Demande::where('statut', 'acceptee')->count();
-
+        $demandesRefusees = Demande::where('statut', 'refusee')->count();
         // Récupération des derniers admins et des dernières demandes
         $admins = User::where('role', 'admin')->latest()->take(5)->get();
-        $demandes = Demande::with('user')->latest()->take(5)->get();
+        
+        // Remplacement de 'user' par 'citoyen'
+        $demandes = Demande::with('citoyen')->latest()->take(5)->get();
 
         return view('super-admin.dashboard', compact(
             'totalAdmins',

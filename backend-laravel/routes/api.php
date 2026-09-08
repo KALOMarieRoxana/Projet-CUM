@@ -30,6 +30,11 @@ Route::middleware(CorsLocal::class)->group(function () {
         Route::get('/demandes/{id}', [DemandeController::class, 'show']);
         Route::post('/demandes', [DemandeController::class, 'store']);
         Route::delete('/demandes/{id}/annuler', [DemandeController::class, 'annuler']);
+        // Route POST pour la création de demande groupée
+        Route::post('/demandes/groupe', [DemandeController::class, 'store']);
+    
+        // Vous avez probablement aussi cette route GET (ce qui explique pourquoi GET est supporté)
+        Route::get('/demandes/groupe', [DemandeController::class, 'index']);
 
         Route::get('/serveur/statut', function (\Illuminate\Http\Request $request) {
             return response()->json([

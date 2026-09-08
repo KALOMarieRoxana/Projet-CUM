@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id('id_demande');
             $table->string('reference')->unique();
             
-            $table->unsignedBigInteger('citoyen_id');
+            $table->unsignedBigInteger('citoyen_id')->nullable();
             $table->foreign('citoyen_id')->references('id_citoyens')->on('citoyens')->onDelete('cascade');
             
             $table->string('demandeur_nom');

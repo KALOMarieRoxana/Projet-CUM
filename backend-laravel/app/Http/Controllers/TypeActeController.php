@@ -8,7 +8,9 @@ class TypeActeController extends Controller
 {
     public function index()
     {
-        $types = TypeActe::select('id_types-actes', 'nom', 'description', 'type_acte')->get();
-        return response()->json(['types' => $types]);
+        $types = TypeActe::all();
+        return response()->json([
+            'types' => $types
+        ], 200);
     }
 }

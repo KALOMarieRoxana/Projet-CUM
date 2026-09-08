@@ -83,8 +83,11 @@
                 @forelse($demandes ?? [] as $demande)
                     <tr>
                         <td>
-                            <div class="fw-semibold">{{ $demande->user->name }}</div>
-                            <small class="text-muted">{{ $demande->user->email }}</small>
+                            <div class="fw-semibold">
+                                {{ $demande->citoyen?->nom ?? $demande->citoyen?->name ?? $demande->demandeur_nom ?? 'N/A' }} 
+                                {{ $demande->citoyen?->prenom ?? $demande->demandeur_prenom ?? '' }}
+                            </div>
+                            <small class="text-muted">{{ $demande->citoyen?->email ?? $demande->demandeur_contact ?? 'Pas d\'email' }}</small>
                         </td>
                         <td>{{ $demande->sujet }}</td>
                         <td>{{ $demande->created_at->format('d/m/Y') }}</td>
@@ -99,12 +102,12 @@
                         </td>
                         <td class="text-end">
                             @if($demande->statut == 'en_attente')
-                                <form action="{{ route('admin.demandes.update', $demande->id) }}" method="POST" class="d-inline">
+                                <form action="{{ route('admin.demandes.update', $demande->getKey()) }}" method="POST" class="d-inline">
                                     @csrf @method('PUT')
                                     <input type="hidden" name="statut" value="acceptee">
                                     <button class="btn btn-sm btn-success me-1"><i class="bi bi-check-lg"></i> Accepter</button>
                                 </form>
-                                <form action="{{ route('admin.demandes.update', $demande->id) }}" method="POST" class="d-inline">
+                                <form action="{{ route('admin.demandes.update', $demande->getKey()) }}" method="POST" class="d-inline">
                                     @csrf @method('PUT')
                                     <input type="hidden" name="statut" value="refusee">
                                     <button class="btn btn-sm btn-danger"><i class="bi bi-x-lg"></i> Refuser</button>
