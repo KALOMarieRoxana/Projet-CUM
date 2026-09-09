@@ -64,7 +64,7 @@ class Demande extends Model
         return $this->belongsTo(User::class, 'traite_par');
     }
 
-    public function demandeActes(): HasMany
+    public function demandeActes()
     {
         return $this->hasMany(DemandeActe::class, 'demande_id', 'id_demande');
     }

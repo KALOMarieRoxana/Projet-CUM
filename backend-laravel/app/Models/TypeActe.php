@@ -9,8 +9,6 @@ class TypeActe extends Model
 {
     use HasFactory;
 
-    protected $table = 'type_actes';
-
     protected $fillable = [
         'nom',
         'type_acte',
@@ -18,45 +16,73 @@ class TypeActe extends Model
         'montantStandardMG',
         'montantExpressMG',
         'montantStandardFR',
-        'montantExpressFR',
+        'montantExpressFR'
     ];
 
     protected $casts = [
         'montantStandardMG' => 'decimal:2',
-        'montantExpressMG'  => 'decimal:2',
+        'montantExpressMG' => 'decimal:2',
         'montantStandardFR' => 'decimal:2',
-        'montantExpressFR'  => 'decimal:2',
+        'montantExpressFR' => 'decimal:2'
     ];
 
+    // ========== RELATIONS ==========
+    
     /**
-     * Calcule le prix unitaire selon la langue et le mode de traitement
-     *
-     * @param string $langue  ('MG' ou 'FR')
-     * @param string $mode    ('standard' ou 'express')
-     * @return float
+     * Relation vers demande_actes
      */
-    public function getPrix(string $langue = 'MG', string $mode = 'standard'): float
+    public function demandeActes()
     {
-        $langue = strtoupper($langue);
-        $mode   = strtolower($mode);
-
-        if ($langue === 'FR') {
-            return (float) ($mode === 'express' ? $this->montantExpressFR : $this->montantStandardFR);
-        }
-
-        return (float) ($mode === 'express' ? $this->montantExpressMG : $this->montantStandardMG);
+        return $this->hasMany(DemandeActe::class, 'type_acte_id', 'id');
     }
 
     /**
-     * Calcule le prix total en fonction de la quantité
-     *
-     * @param int $quantite
-     * @param string $langue
-     * @param string $mode
-     * @return float
+     * Récupérer tous les actes de ce type
+     * (Relation polymorphique inverse)
      */
-    public function getPrixTotal(int $quantite = 1, string $langue = 'MG', string $mode = 'standard'): float
+    public function actes()
     {
-        return $this->getPrix($langue, $mode) * $quantite;
+        // Cette méthode permet de récupérer tous les actes d'un type spécifique
+        switch ($this->type_acte) {
+            case 'naissance':
+                return $this->hasManyThrough(Naissance::class, DemandeActe::class, 'type_acte_id', 'id', 'id', 'acte_id');
+            case 'mariage':
+                return $this->hasManyThrough(Mariage::class, DemandeActe::class, 'type_acte_id', 'id', 'id', 'acte_id');
+            case 'deces':
+                return $this->hasManyThrough(Deces::class, DemandeActe::class, 'type_acte_id', 'id', 'id', 'acte_id');
+            case 'divorces':
+                return $this->hasManyThrough(Divorce::class, DemandeActe::class, 'type_acte_id', 'id', 'id', 'acte_id');
+            default:
+                return null;
+        }
+    }
+
+    // ========== MÉTHODES ==========
+
+    /**
+     * Calculer le prix selon la langue et le service
+     */
+    public function calculerPrix(string $langue, string $service): float
+    {
+        $field = 'montant' . ucfirst($service) . strtoupper($langue);
+        return $this->$field ?? 0;
+    }
+
+    // ========== ACCESSORS ==========
+    
+    /**
+     * Accesseur pour le libellé
+     */
+    public function getLabelAttribute()
+    {
+        return $this->nom;
+    }
+
+    /**
+     * Accesseur pour le slug
+     */
+    public function getSlugAttribute()
+    {
+        return $this->type_acte;
     }
 }

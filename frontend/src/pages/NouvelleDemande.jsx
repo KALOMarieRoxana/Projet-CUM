@@ -232,6 +232,12 @@ export default function NouvelleDemande() {
       return;
     }
 
+    // LOG DE DÉBOGAGE
+    console.log('📝 Détails de l\'acte à ajouter:', {
+      type: selectionActe.type_acte,
+      details: detailsActe
+    });
+
     setActesAjoutes(prev => {
       const indexExistant = prev.findIndex(
         a => a.type_acte === selectionActe.type_acte && a.langue === selectionActe.langue
@@ -308,7 +314,17 @@ export default function NouvelleDemande() {
         langue: acte.langue,
         quantite: acte.quantite,
         prix_unitaire: calculerPrixUnitaire(acte.type_acte, acte.langue, form.service),
-        details: acte.details,
+        // Envoyer les details complets
+        details: {
+          ...acte.details,
+          //Ajouter les informations de la personne concernée
+          personne_nom: form.personne_nom,
+          personne_prenom: form.personne_prenom,
+          personne_lieu_naissance: form.personne_lieu_naissance,
+          personne_date_naissance: form.personne_date_naissance,
+          // Ajouter le type d'acte pour référence
+          type_acte: acte.type_acte
+        }
       }))
     };
 
@@ -320,7 +336,8 @@ export default function NouvelleDemande() {
       setSucces(`Demande envoyée avec succès ! Référence : ${response.data.reference}`);
       setTimeout(() => navigate('/tableau-de-bord'), 4000);
     } catch (err) {
-      console.error(err);
+      console.error('Erreur complète:', err);
+      console.error('Payload envoyé:', payload);
       setErreur(err.response?.data?.message || 'Erreur lors de l\'envoi de la demande.');
     } finally {
       setSoumission(false);
@@ -544,57 +561,91 @@ export default function NouvelleDemande() {
                   const Icone = ICONES_TYPE[item.type_acte] || FileText;
                   const prixUnitaire = calculerPrixUnitaire(item.type_acte, item.langue, form.service);
                   const nomLangue = OPTIONS_LANGUE.find(l => l.value === item.langue)?.label;
-
+                  
+                   // Récupérer les détails à afficher
+                  const detailsKeys = Object.keys(item.details || {});
+                  const detailsAffiches = detailsKeys
+                    .filter(key => item.details[key]?.trim())
+                    .map(key => {
+                      const champ = CHAMPS_SPECIFIQUES[item.type_acte]?.find(c => c.name === key);
+                      return champ ? `${champ.label}: ${item.details[key]}` : null;
+                    })
+                    .filter(Boolean);
                   return (
                     <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#FFFFFF' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 8, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4F46E5' }}>
-                          <Icone size={18} />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>
-                            {LABELS_TYPE[item.type_acte]} <span style={{ fontSize: 12, color: '#6B7280', fontWeight: 400 }}>({nomLangue})</span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 8, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4F46E5' }}>
+                            <Icone size={18} />
                           </div>
-                          <div style={{ fontSize: 12, color: '#6B7280' }}>
-                            {new Intl.NumberFormat('fr-FR').format(prixUnitaire)} Ar / unité
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>
+                              {LABELS_TYPE[item.type_acte]} <span style={{ fontSize: 12, color: '#6B7280', fontWeight: 400 }}>({nomLangue})</span>
+                            </div>
+                            <div style={{ fontSize: 12, color: '#6B7280' }}>
+                              {new Intl.NumberFormat('fr-FR').format(prixUnitaire)} Ar / unité
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.quantite}
-                          onChange={(e) => modifierQuantite(index, e.target.value)}
-                          style={{ width: 60, padding: '6px 8px', borderRadius: 6, border: '1px solid #D1D5DB', textAlign: 'center', fontSize: 13 }}
-                        />
-                        <div style={{ fontSize: 14, fontWeight: 700, width: 110, textAlign: 'right' }}>
-                          {new Intl.NumberFormat('fr-FR').format(prixUnitaire * item.quantite)} Ar
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantite}
+                            onChange={(e) => modifierQuantite(index, e.target.value)}
+                            style={{ width: 60, padding: '6px 8px', borderRadius: 6, border: '1px solid #D1D5DB', textAlign: 'center', fontSize: 13 }}
+                          />
+                          <div style={{ fontSize: 14, fontWeight: 700, width: 110, textAlign: 'right' }}>
+                            {new Intl.NumberFormat('fr-FR').format(prixUnitaire * item.quantite)} Ar
+                          </div>
+                          <button type="button" onClick={() => retirerActe(index)} style={{ border: 'none', background: 'transparent', color: '#EF4444', cursor: 'pointer' }}>
+                            <Trash2 size={16} />
+                          </button>
                         </div>
-                        <button type="button" onClick={() => retirerActe(index)} style={{ border: 'none', background: 'transparent', color: '#EF4444', cursor: 'pointer' }}>
-                          <Trash2 size={16} />
-                        </button>
                       </div>
+                      {/* Afficher les détails */}
+                      {detailsAffiches.length > 0 && (
+                        <div style={{ 
+                          marginTop: 8, 
+                          paddingTop: 8, 
+                          borderTop: '1px dashed #E5E7EB',
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: '4px 12px',
+                          fontSize: 12,
+                          color: '#4B5563'
+                        }}>
+                          {detailsAffiches.map((detail, i) => (
+                            <span key={i} style={{ 
+                              background: '#F3F4F6', 
+                              padding: '2px 8px', 
+                              borderRadius: 4 
+                            }}>
+                              {detail} 
+                            </span>
+                          ))}
                     </div>
-                  );
-                })}
-
-                <div style={{ marginTop: 12, padding: 16, borderRadius: 8, background: '#F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>Total ({totalActes} document{totalActes > 1 ? 's' : ''})</span>
-                  <span style={{ fontSize: 18, fontWeight: 700, color: '#4F46E5' }}>{new Intl.NumberFormat('fr-FR').format(prixTotal)} Ar</span>
+                  )}
                 </div>
+              );
+            })}
+
+            <div style={{ marginTop: 12, padding: 16, borderRadius: 8, background: '#F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 14, fontWeight: 600 }}>Total ({totalActes} document{totalActes > 1 ? 's' : ''})</span>
+                <span style={{ fontSize: 18, fontWeight: 700, color: '#4F46E5' }}>{new Intl.NumberFormat('fr-FR').format(prixTotal)} Ar</span>
               </div>
-            ) : (
-              <div style={{ padding: 24, textAlign: 'center', color: '#9CA3AF', border: '2px dashed #E5E7EB', borderRadius: 8 }}>
-                Aucun acte ajouté.
-              </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div style={{ padding: 24, textAlign: 'center', color: '#9CA3AF', border: '2px dashed #E5E7EB', borderRadius: 8 }}>
+               Aucun acte ajouté.
+            </div>
+          )}
+        </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 20, borderTop: '1px solid #E5E7EB' }}>
             <button type="button" onClick={() => navigate('/tableau-de-bord')} disabled={soumission} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#FFF', color: '#374151', fontSize: 13, cursor: 'pointer' }}>
-              Annuler
+            Annuler
             </button>
             <button type="submit" disabled={soumission || actesAjoutes.length === 0} style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: soumission || actesAjoutes.length === 0 ? '#9CA3AF' : '#4F46E5', color: '#FFF', fontSize: 13, fontWeight: 600, cursor: soumission || actesAjoutes.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Send size={16} /> {soumission ? 'Envoi en cours...' : 'Envoyer la demande'}

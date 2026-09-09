@@ -18,10 +18,10 @@ return new class extends Migration
                   ->on('demandes')
                   ->onDelete('cascade');
 
-            // 2. Référence au nom/slug du type d'acte (ex: "naissance", "mariage", "deces", "divorce")
-            $table->string('type_acte');
-            $table->foreign('type_acte')
-                  ->references('type_acte')
+            // 2. Clé étrangère vers type_actes (utiliser l'ID au lieu du slug)
+            $table->unsignedBigInteger('type_acte_id');
+            $table->foreign('type_acte_id')
+                  ->references('id')
                   ->on('type_actes')
                   ->onDelete('cascade');
 
@@ -40,6 +40,11 @@ return new class extends Migration
             $table->timestamp('date_traitement')->nullable();
 
             $table->timestamps();
+
+            // ✅ Index pour améliorer les performances
+            $table->index(['acte_type', 'acte_id']);
+            $table->index('type_acte_id');
+            $table->index('statut');
         });
     }
 

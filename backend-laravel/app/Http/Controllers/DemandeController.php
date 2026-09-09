@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreDemandeRequest;
 use App\Models\Demande;
 use App\Models\DemandeActe;
 use App\Models\Naissance;
@@ -64,7 +63,7 @@ class DemandeController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'message' => 'Statut mis à jour avec succès.',
-                'demande' => $demande->load('traiteur')
+                'demande' => $demande->load('traitePar')
             ], 200);
         }
 
@@ -97,9 +96,7 @@ class DemandeController extends Controller
             return DB::transaction(function () use ($request, $citoyen, $citoyenId) {
                 
                 // 1. Génération du numéro de référence unique
-                $reference = method_exists(Demande::class, 'generateReference') 
-                    ? Demande::generateReference() 
-                    : 'DEM-' . strtoupper(uniqid());
+                $reference = 'DEM-' . date('Ymd') . '-' . strtoupper(uniqid());
 
                 // 2. Création de la Demande globale
                 $demande = Demande::create([
@@ -114,36 +111,57 @@ class DemandeController extends Controller
                     'personne_prenom'         => $request->personne_prenom ?? '',
                     'personne_lieu_naissance' => $request->personne_lieu_naissance ?? '',
                     'personne_date_naissance' => $request->personne_date_naissance ?? null,
+                    'personne_numero_acte'    => $request->personne_numero_acte ?? null,
                     'service'                 => $request->service ?? 'standard',
                     'prix_total'              => 0,
                     'nombre_actes'            => 0,
                     'statut'                  => 'en_attente',
                 ]);
 
-                // 3. Traitement des actes envoyés (tableau 'actes' ou demande unique)
-                $actesInput = $request->has('actes') ? $request->actes : [$request->all()];
-                
+                // 3. Traitement des actes envoyés
+                // Si le format est 'actes' (tableau) ou 'demandes' (ancien format)
+                $actesInput = [];
+                if ($request->has('actes')) {
+                    $actesInput = $request->actes;
+                } elseif ($request->has('demandes')) {
+                    $actesInput = $request->demandes;
+                } else {
+                    // Format unique (une seule demande)
+                    $actesInput = [$request->all()];
+                }
+
+                // Si actesInput est un objet, le convertir en tableau
+                if (is_object($actesInput)) {
+                    $actesInput = $actesInput->toArray();
+                }
+
                 $prixTotalGlobal = 0;
                 $totalNombreActes = 0;
 
                 foreach ($actesInput as $item) {
+                    // Si item est un objet, le convertir en tableau
+                    if (is_object($item)) {
+                        $item = $item->toArray();
+                    }
+
+                    // Récupération du type d'acte
                     $typeActeNom = $item['type_acte'] ?? 'naissance';
                     
                     // Récupération de la référence des tarifs pour ce type d'acte
                     $typeActe = TypeActe::where('type_acte', $typeActeNom)->first();
 
-                    // Langue (FR ou MG) et Service (standard ou express)
-                    $langue = strtoupper($item['langue'] ?? $request->langue ?? 'FR');
-                    $service = strtolower($item['service'] ?? $request->service ?? 'standard');
-                    
-                    // Calcul du prix unitaire
-                    if ($typeActe && method_exists($typeActe, 'getPrixUnitaire')) {
-                        $prixUnitaire = $typeActe->getPrixUnitaire($langue, $service);
-                    } else {
-                        $prixUnitaire = $item['prix_unitaire'] ?? 0;
+                    if (!$typeActe) {
+                        throw new \Exception("Type d'acte non trouvé: {$typeActeNom}");
                     }
 
-                    $quantite = $item['nbre_com'] ?? $item['quantite'] ?? 1;
+                    // Langue (FR ou MG) et Service (standard ou express)
+                    $langue = strtoupper($item['langue'] ?? $request->langue ?? 'MG');
+                    $service = strtolower($item['service'] ?? $request->service ?? 'standard');
+
+                    // Calcul du prix unitaire via la méthode du modèle TypeActe
+                    $prixUnitaire = $typeActe->calculerPrix($langue, $service);
+
+                    $quantite = $item['quantite'] ?? $item['nbre_com'] ?? 1;
                     $sousTotal = $prixUnitaire * $quantite;
 
                     // Champs communs insérés dans les tables spécifiques d'actes
@@ -160,65 +178,70 @@ class DemandeController extends Controller
                     ];
 
                     $acteModel = null;
+                    $details = $item['details'] ?? $item;
 
                     // Instanciation de l'acte selon son type
                     switch ($typeActeNom) {
                         case 'naissance':
                             $acteModel = Naissance::create(array_merge($commonData, [
-                                'nom'            => $item['nom'] ?? $request->personne_nom ?? '',
-                                'prenom'         => $item['prenom'] ?? $request->personne_prenom ?? '',
-                                'date_naissance' => $item['date_naiss'] ?? $item['date_naissance'] ?? $request->personne_date_naissance ?? null,
-                                'lieu_naissance' => $item['lieu_naiss'] ?? $item['lieu_naissance'] ?? $request->personne_lieu_naissance ?? '',
-                                'nom_pere'       => $item['nom_pere'] ?? $request->nom_pere ?? '',
-                                'prenom_pere'    => $item['prenom_pere'] ?? $request->prenom_pere ?? '',
-                                'nom_mere'       => $item['nom_mere'] ?? $request->nom_mere ?? '',
-                                'prenom_mere'    => $item['prenom_mere'] ?? $request->prenom_mere ?? '',
+                                'nom'            => $details['personne_nom'] ?? $item['nom'] ?? $request->personne_nom ?? '',
+                                'prenom'         => $details['personne_prenom'] ?? $item['prenom'] ?? $request->personne_prenom ?? '',
+                                'date_naissance' => $details['personne_date_naissance'] ?? $item['date_naissance'] ?? $request->personne_date_naissance ?? null,
+                                'lieu_naissance' => $details['personne_lieu_naissance'] ?? $item['lieu_naissance'] ?? $request->personne_lieu_naissance ?? '',
+                                'nom_pere'       => $details['pere_nom'] ?? $item['nom_pere'] ?? $request->nom_pere ?? '',
+                                'prenom_pere'    => $details['pere_prenom'] ?? $item['prenom_pere'] ?? $request->prenom_pere ?? '',
+                                'nom_mere'       => $details['mere_nom'] ?? $item['nom_mere'] ?? $request->nom_mere ?? '',
+                                'prenom_mere'    => $details['mere_prenom'] ?? $item['prenom_mere'] ?? $request->prenom_mere ?? '',
+                                'date_acte'      => now(),
                             ]));
                             break;
 
                         case 'mariage':
                             $acteModel = Mariage::create(array_merge($commonData, [
-                                'nom_epoux'             => $item['nom_epoux'] ?? '',
-                                'prenom_epoux'          => $item['prenom_epoux'] ?? '',
-                                'date_naiss_epoux'      => $item['date_naiss_epoux'] ?? null,
-                                'lieu_naiss_epoux'      => $item['lieu_naiss_epoux'] ?? '',
-                                'nom_epouse'            => $item['nom_epouse'] ?? '',
-                                'prenom_epouse'         => $item['prenom_epouse'] ?? '',
-                                'date_naissance_epouse' => $item['date_naiss_epouse'] ?? $item['date_naissance_epouse'] ?? null,
-                                'lieu_naissance_epouse' => $item['lieu_naiss_epouse'] ?? $item['lieu_naissance_epouse'] ?? '',
-                                'date_mariage'          => $item['date_mariage'] ?? null,
-                                'lieu_mariage'          => $item['lieu_mariage'] ?? '',
-                            ]));
-                            break;
-
-                        case 'divorce':
-                            $acteModel = Divorce::create(array_merge($commonData, [
-                                'nom_epoux'     => $item['nom_epoux'] ?? '',
-                                'prenom_epoux'  => $item['prenom_epoux'] ?? '',
-                                'nom_epouse'    => $item['nom_epouse'] ?? '',
-                                'prenom_epouse' => $item['prenom_epouse'] ?? '',
-                                'date_jugement' => $item['date_jugement'] ?? null,
-                                'num_jugement'  => $item['num_jugement'] ?? '',
-                                'tribunal'      => $item['tribunal'] ?? '',
+                                'nom_epoux'             => $details['epoux_nom'] ?? $item['nom_epoux'] ?? '',
+                                'prenom_epoux'          => $details['epoux_prenom'] ?? $item['prenom_epoux'] ?? '',
+                                'date_naissance_epoux'  => $details['epoux_date_naissance'] ?? $item['date_naissance_epoux'] ?? null,
+                                'lieu_naissance_epoux'  => $details['epoux_lieu_naissance'] ?? $item['lieu_naissance_epoux'] ?? '',
+                                'nom_epouse'            => $details['epouse_nom'] ?? $item['nom_epouse'] ?? '',
+                                'prenom_epouse'         => $details['epouse_prenom'] ?? $item['prenom_epouse'] ?? '',
+                                'date_naissance_epouse' => $details['epouse_date_naissance'] ?? $item['date_naissance_epouse'] ?? null,
+                                'lieu_naissance_epouse' => $details['epouse_lieu_naissance'] ?? $item['lieu_naissance_epouse'] ?? '',
+                                'date_mariage'          => $details['date_mariage'] ?? $item['date_mariage'] ?? null,
+                                'lieu_mariage'          => $details['lieu_mariage'] ?? $item['lieu_mariage'] ?? '',
                             ]));
                             break;
 
                         case 'deces':
                             $acteModel = Deces::create(array_merge($commonData, [
-                                'nom_defunt'            => $item['nom_defunt'] ?? '',
-                                'prenom_defunt'         => $item['prenom_defunt'] ?? '',
-                                'date_naissance_defunt' => $item['date_naiss_defunt'] ?? $item['date_naissance_defunt'] ?? null,
-                                'date_deces'            => $item['date_deces'] ?? null,
-                                'lieu_deces'            => $item['lieu_deces'] ?? '',
+                                'nom_defunt'            => $details['defunt_nom'] ?? $item['nom_defunt'] ?? '',
+                                'prenom_defunt'         => $details['defunt_prenom'] ?? $item['prenom_defunt'] ?? '',
+                                'date_naissance_defunt' => $details['defunt_date_naissance'] ?? $item['date_naissance_defunt'] ?? null,
+                                'date_deces'            => $details['date_deces'] ?? $item['date_deces'] ?? null,
+                                'lieu_deces'            => $details['lieu_deces'] ?? $item['lieu_deces'] ?? '',
                             ]));
                             break;
+
+                        case 'divorces':
+                            $acteModel = Divorce::create(array_merge($commonData, [
+                                'nom_epoux'     => $details['conjoint_nom'] ?? $item['nom_epoux'] ?? '',
+                                'prenom_epoux'  => $details['conjoint_prenom'] ?? $item['prenom_epoux'] ?? '',
+                                'nom_epouse'    => $details['conjointe_nom'] ?? $item['nom_epouse'] ?? '',
+                                'prenom_epouse' => $details['conjointe_prenom'] ?? $item['prenom_epouse'] ?? '',
+                                'date_jugement' => $details['date_demande_divorce'] ?? $item['date_jugement'] ?? null,
+                                'num_jugement'  => $details['num_jugement'] ?? $item['num_jugement'] ?? '',
+                                'tribunal'      => $details['tribunal'] ?? $item['tribunal'] ?? '',
+                            ]));
+                            break;
+
+                        default:
+                            throw new \Exception("Type d'acte non reconnu: {$typeActeNom}");
                     }
 
                     // Enregistrement de la ligne pivot polymorphique dans demande_actes
                     if ($acteModel) {
                         DemandeActe::create([
                             'demande_id'    => $demande->id_demande ?? $demande->id,
-                            'type_acte'     => $typeActeNom,
+                            'type_acte_id'  => $typeActe->id,
                             'acte_type'     => get_class($acteModel),
                             'acte_id'       => $acteModel->getKey(),
                             'prix_unitaire' => $prixUnitaire,
@@ -240,6 +263,7 @@ class DemandeController extends Controller
 
                 return response()->json([
                     'message' => 'Demande enregistrée avec succès.',
+                    'reference' => $reference,
                     'demande' => $demande->load('demandeActes.acte')
                 ], 201);
             });
@@ -269,7 +293,7 @@ class DemandeController extends Controller
             $citoyenId = $citoyen->id_citoyens ?? $citoyen->id;
 
             $demandes = Demande::where('citoyen_id', $citoyenId)
-                ->with(['demandeActes.acte', 'demandeActes.typeActeRelation'])
+                ->with(['demandeActes.typeActe', 'demandeActes.acte'])
                 ->orderBy('created_at', 'desc')
                 ->get();
 
@@ -278,6 +302,7 @@ class DemandeController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
+            Log::error('Erreur mesDemandes: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Erreur lors de la récupération des demandes: ' . $e->getMessage()
             ], 500);
@@ -298,15 +323,15 @@ class DemandeController extends Controller
 
             $userId = $user->id_citoyens ?? $user->id;
 
+            // Si l'utilisateur est admin, il peut voir toutes les demandes
             if (in_array($user->role ?? '', ['admin', 'super_admin', 'agent'])) {
-                $demande = Demande::with(['citoyen', 'traiteur', 'demandeActes.acte', 'demandeActes.typeActeRelation'])->findOrFail($id);
+                $demande = Demande::with(['citoyen', 'traitePar', 'demandeActes.typeActe', 'demandeActes.acte'])
+                    ->findOrFail($id);
             } else {
+                // Sinon, seulement ses propres demandes
                 $demande = Demande::where('citoyen_id', $userId)
-                    ->where(function ($q) use ($id) {
-                        $q->where('id_demande', $id)->orWhere('id', $id);
-                    })
-                    ->with(['demandeActes.acte', 'demandeActes.typeActeRelation'])
-                    ->firstOrFail();
+                    ->with(['demandeActes.typeActe', 'demandeActes.acte'])
+                    ->findOrFail($id);
             }
 
             if (request()->wantsJson()) {
@@ -316,6 +341,7 @@ class DemandeController extends Controller
             return view('admin.demandes_show', compact('demande'));
 
         } catch (\Exception $e) {
+            Log::error('Erreur show demande: ' . $e->getMessage());
             if (request()->wantsJson()) {
                 return response()->json(['message' => 'Demande non trouvée.'], 404);
             }
@@ -338,10 +364,7 @@ class DemandeController extends Controller
             $userId = $user->id_citoyens ?? $user->id;
 
             $demande = Demande::where('citoyen_id', $userId)
-                ->where(function ($q) use ($id) {
-                    $q->where('id_demande', $id)->orWhere('id', $id);
-                })
-                ->firstOrFail();
+                ->findOrFail($id);
 
             if ($demande->statut !== 'en_attente') {
                 return response()->json([
@@ -356,6 +379,7 @@ class DemandeController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
+            Log::error('Erreur annuler demande: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Erreur lors de l\'annulation de la demande.'
             ], 500);

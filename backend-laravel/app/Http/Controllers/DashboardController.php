@@ -16,7 +16,7 @@ class DashboardController extends Controller
         // Initialisation du Query Builder avec Eager Loading
         $query = Demande::with([
             'citoyen',
-            'demandeActes.typeActeRelation',
+            'demandeActes.typeActe',
             'demandeActes.acte'
         ]); // <-- Point-virgule ajouté ici pour corriger l'erreur de syntaxe
 
@@ -79,7 +79,7 @@ class DashboardController extends Controller
         // Dernières demandes avec Eager Loading
         $demandes = Demande::with([
             'citoyen', 
-            'demandeActes.typeActeRelation'
+            'demandeActes.typeActe'
         ])->latest()->take(5)->get();
 
         return view('super-admin.dashboard', compact(
