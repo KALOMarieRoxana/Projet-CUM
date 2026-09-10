@@ -24,11 +24,13 @@ return new class extends Migration
             $table->string('nom_epoux');
             $table->string('prenom_epoux');
             $table->date('date_naissance_epoux')->nullable();
+            $table->string('lieu_naissance_epoux')->nullable();
             
             // Informations sur l'Épouse
             $table->string('nom_epouse');
             $table->string('prenom_epouse');
             $table->date('date_naissance_epouse')->nullable();
+            $table->string('lieu_naissance_epouse')->nullable();
             
             // Informations sur le mariage
             $table->date('date_mariage');

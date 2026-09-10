@@ -21,7 +21,7 @@ const ICONES_TYPE = {
   naissance: User,
   mariage: Heart,
   deces: HeartPulse,
-  divorces: Scale,
+  divorce: Scale,
 };
 
 const STATUTS = {
@@ -60,7 +60,7 @@ const CHAMPS_SPECIFIQUES = {
     { name: 'lieu_deces', label: 'Lieu du décès' },
     { name: 'cause_deces', label: 'Cause du décès' },
   ],
-  divorces: [
+  divorce: [
     { name: 'conjoint_nom', label: 'Nom du conjoint' },
     { name: 'conjoint_prenom', label: 'Prénom du conjoint' },
     { name: 'conjointe_nom', label: 'Nom de la conjointe' },
@@ -149,8 +149,9 @@ export default function MesDemandes() {
 
   // Calcul du prix total pour une demande
   const calculerTotalDemande = (demande) => {
-    if (!demande.demandes || demande.demandes.length === 0) return 0;
-    return demande.demandes.reduce((sum, item) => {
+    const actes = demande.demande_actes || demande.demandeActes || [];
+    if (actes.length === 0) return 0;
+    return actes.reduce((sum, item) => {
       return sum + (parseFloat(item.prix_unitaire || 0) * (item.quantite || 1));
     }, 0);
   };
@@ -298,7 +299,8 @@ export default function MesDemandes() {
             {demandesFiltrees.map((demande) => {
               const statutInfo = STATUTS[demande.statut] || { label: demande.statut, color: '#6B7280', bg: '#F3F4F6' };
               const totalDemande = calculerTotalDemande(demande);
-              const nbActes = demande.demandes?.reduce((sum, d) => sum + (d.quantite || 1), 0) || 0;
+              const actes = demande.demande_actes || demande.demandeActes || [];
+              const nbActes = actes.reduce((sum, d) => sum + (d.quantite || 1), 0);
               
               return (
                 <div key={demande.id_demande || demande.id} style={{ background: '#FFFFFF', borderRadius: 12, border: '1px solid #E5E7EB', padding: 16 }}>
@@ -404,11 +406,21 @@ export default function MesDemandes() {
 
             <div>
               <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: '#111827' }}>Liste des actes demandés</h3>
-              {demandeSelectionnee.demandes && demandeSelectionnee.demandes.length > 0 ? (
+              {(demandeSelectionnee.demande_actes || demandeSelectionnee.demandeActes || []).length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {demandeSelectionnee.demandes.map((item, index) => {
-                    const Icone = ICONES_TYPE[item.type_acte] || FileText;
-                    const nomActe = LABELS_TYPE[item.type_acte] || item.type_acte;
+                  {(demandeSelectionnee.demande_actes || demandeSelectionnee.demandeActes).map((item, index) => {
+                    // Récupérer le slug (chaîne) du type d'acte
+                    let typeActe = typeof item.type_acte === 'string' ? item.type_acte : null;
+                    if (!typeActe) {
+                      typeActe = item.typeActe?.type_acte || null;
+                    }
+                    // Si toujours null, fallback sur la clé de l'objet si présent
+                    if (!typeActe && item.typeActe && typeof item.typeActe === 'object') {
+                      typeActe = item.typeActe.type_acte;
+                    }
+                    
+                    const Icone = ICONES_TYPE[typeActe] || FileText;
+                    const nomActe = LABELS_TYPE[typeActe] || item.typeActe?.nom || typeActe;
                     const prixUnitaire = parseFloat(item.prix_unitaire || 0);
                     const quantite = item.quantite || 1;
                     
@@ -417,7 +429,7 @@ export default function MesDemandes() {
                     const detailsAffiches = Object.keys(details)
                       .filter(key => details[key]?.trim())
                       .map(key => {
-                    const champ = CHAMPS_SPECIFIQUES[item.type_acte]?.find(c => c.name === key);
+                        const champ = CHAMPS_SPECIFIQUES[typeActe]?.find(c => c.name === key);
                     return champ ? { label: champ.label, value: details[key] } : null;
                     })
                     .filter(Boolean);

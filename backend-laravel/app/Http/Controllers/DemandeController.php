@@ -145,10 +145,15 @@ class DemandeController extends Controller
                     }
 
                     // Récupération du type d'acte
-                    $typeActeNom = $item['type_acte'] ?? 'naissance';
+                    $typeActeNom = strtolower(
+                        $item['type_acte']
+                        ?? ($item['details']['type_acte'] ?? null)
+                        ?? $request->type_acte
+                        ?? 'naissance'
+                    );
                     
-                    // Récupération de la référence des tarifs pour ce type d'acte
                     $typeActe = TypeActe::where('type_acte', $typeActeNom)->first();
+                    // Récupération de la référence des tarifs pour ce type d'acte
 
                     if (!$typeActe) {
                         throw new \Exception("Type d'acte non trouvé: {$typeActeNom}");
@@ -174,62 +179,70 @@ class DemandeController extends Controller
                         'montantStandardFR' => $typeActe->montantStandardFR ?? 0,
                         'montantExpressFR'  => $typeActe->montantExpressFR ?? 0,
                         'nbre_com'          => $quantite,
-                        'num_acte'          => $item['num_acte'] ?? $request->personne_numero_acte ?? null,
+                        'num_acte'          => $item['num_acte'] ?? $request->personne_numero_acte ?? $reference,
                     ];
 
                     $acteModel = null;
                     $details = $item['details'] ?? $item;
 
-                    // Instanciation de l'acte selon son type
-                    switch ($typeActeNom) {
+                    // Instanciation de l'acte selon son type avec recherche approfondie des clés
+                    switch (strtolower($typeActeNom)) {
                         case 'naissance':
                             $acteModel = Naissance::create(array_merge($commonData, [
-                                'nom'            => $details['personne_nom'] ?? $item['nom'] ?? $request->personne_nom ?? '',
-                                'prenom'         => $details['personne_prenom'] ?? $item['prenom'] ?? $request->personne_prenom ?? '',
-                                'date_naissance' => $details['personne_date_naissance'] ?? $item['date_naissance'] ?? $request->personne_date_naissance ?? null,
-                                'lieu_naissance' => $details['personne_lieu_naissance'] ?? $item['lieu_naissance'] ?? $request->personne_lieu_naissance ?? '',
-                                'nom_pere'       => $details['pere_nom'] ?? $item['nom_pere'] ?? $request->nom_pere ?? '',
-                                'prenom_pere'    => $details['pere_prenom'] ?? $item['prenom_pere'] ?? $request->prenom_pere ?? '',
-                                'nom_mere'       => $details['mere_nom'] ?? $item['nom_mere'] ?? $request->nom_mere ?? '',
-                                'prenom_mere'    => $details['mere_prenom'] ?? $item['prenom_mere'] ?? $request->prenom_mere ?? '',
+                                'nom'            => $details['nom'] ?? $details['personne_nom'] ?? $item['nom'] ?? $request->personne_nom ?? '',
+                                'prenom'         => $details['prenom'] ?? $details['personne_prenom'] ?? $item['prenom'] ?? $request->personne_prenom ?? '',
+                                'date_naissance' => $details['date_naissance'] ?? $details['personne_date_naissance'] ?? $item['date_naissance'] ?? $request->personne_date_naissance ?? null,
+                                'lieu_naissance' => $details['lieu_naissance'] ?? $details['personne_lieu_naissance'] ?? $item['lieu_naissance'] ?? $request->personne_lieu_naissance ?? '',
+                                'nom_pere'       => $details['nom_pere'] ?? $details['pere_nom'] ?? $item['nom_pere'] ?? $request->nom_pere ?? '',
+                                'prenom_pere'    => $details['prenom_pere'] ?? $details['pere_prenom'] ?? $item['prenom_pere'] ?? $request->prenom_pere ?? '',
+                                'nom_mere'       => $details['nom_mere'] ?? $details['mere_nom'] ?? $item['nom_mere'] ?? $request->nom_mere ?? '',
+                                'prenom_mere'    => $details['prenom_mere'] ?? $details['mere_prenom'] ?? $item['prenom_mere'] ?? $request->prenom_mere ?? '',
                                 'date_acte'      => now(),
                             ]));
                             break;
 
                         case 'mariage':
                             $acteModel = Mariage::create(array_merge($commonData, [
-                                'nom_epoux'             => $details['epoux_nom'] ?? $item['nom_epoux'] ?? '',
-                                'prenom_epoux'          => $details['epoux_prenom'] ?? $item['prenom_epoux'] ?? '',
-                                'date_naissance_epoux'  => $details['epoux_date_naissance'] ?? $item['date_naissance_epoux'] ?? null,
-                                'lieu_naissance_epoux'  => $details['epoux_lieu_naissance'] ?? $item['lieu_naissance_epoux'] ?? '',
-                                'nom_epouse'            => $details['epouse_nom'] ?? $item['nom_epouse'] ?? '',
-                                'prenom_epouse'         => $details['epouse_prenom'] ?? $item['prenom_epouse'] ?? '',
-                                'date_naissance_epouse' => $details['epouse_date_naissance'] ?? $item['date_naissance_epouse'] ?? null,
-                                'lieu_naissance_epouse' => $details['epouse_lieu_naissance'] ?? $item['lieu_naissance_epouse'] ?? '',
-                                'date_mariage'          => $details['date_mariage'] ?? $item['date_mariage'] ?? null,
-                                'lieu_mariage'          => $details['lieu_mariage'] ?? $item['lieu_mariage'] ?? '',
+                                'nom_epoux'             => $details['nom_epoux'] ?? $details['epoux_nom'] ?? $item['nom_epoux'] ?? $request->nom_epoux ?? '',
+                                'prenom_epoux'          => $details['prenom_epoux'] ?? $details['epoux_prenom'] ?? $item['prenom_epoux'] ?? $request->prenom_epoux ?? '',
+                                'date_naissance_epoux'  => $details['date_naissance_epoux'] ?? $details['epoux_date_naissance'] ?? $item['date_naissance_epoux'] ?? $request->date_naissance_epoux ?? null,
+                                'lieu_naissance_epoux'  => $details['lieu_naissance_epoux'] ?? $details['epoux_lieu_naissance'] ?? $item['lieu_naissance_epoux'] ?? $request->lieu_naissance_epoux ?? '',
+                                'nom_epouse'            => $details['nom_epouse'] ?? $details['epouse_nom'] ?? $item['nom_epouse'] ?? $request->nom_epouse ?? '',
+                                'prenom_epouse'         => $details['prenom_epouse'] ?? $details['epouse_prenom'] ?? $item['prenom_epouse'] ?? $request->prenom_epouse ?? '',
+                                'date_naissance_epouse' => $details['date_naissance_epouse'] ?? $details['epouse_date_naissance'] ?? $item['date_naissance_epouse'] ?? $request->date_naissance_epouse ?? null,
+                                'lieu_naissance_epouse' => $details['lieu_naissance_epouse'] ?? $details['epouse_lieu_naissance'] ?? $item['lieu_naissance_epouse'] ?? $request->lieu_naissance_epouse ?? '',
+                                'date_mariage'          => $details['date_mariage'] ?? $item['date_mariage'] ?? $request->date_mariage ?? null,
+                                'lieu_mariage'          => $details['lieu_mariage'] ?? $item['lieu_mariage'] ?? $request->lieu_mariage ?? '',
                             ]));
                             break;
 
                         case 'deces':
                             $acteModel = Deces::create(array_merge($commonData, [
-                                'nom_defunt'            => $details['defunt_nom'] ?? $item['nom_defunt'] ?? '',
-                                'prenom_defunt'         => $details['defunt_prenom'] ?? $item['prenom_defunt'] ?? '',
-                                'date_naissance_defunt' => $details['defunt_date_naissance'] ?? $item['date_naissance_defunt'] ?? null,
-                                'date_deces'            => $details['date_deces'] ?? $item['date_deces'] ?? null,
-                                'lieu_deces'            => $details['lieu_deces'] ?? $item['lieu_deces'] ?? '',
+                                'nom_defunt'            => $details['nom_defunt'] ?? $details['defunt_nom'] ?? $item['nom_defunt'] ?? $request->nom_defunt ?? $request->personne_nom ?? '',
+                                'prenom_defunt'         => $details['prenom_defunt'] ?? $details['defunt_prenom'] ?? $item['prenom_defunt'] ?? $request->prenom_defunt ?? $request->personne_prenom ?? '',
+                                'date_naissance_defunt' => $details['date_naissance_defunt'] ?? $details['defunt_date_naissance'] ?? $item['date_naissance_defunt'] ?? $request->date_naissance_defunt ?? null,
+                                'date_deces'            => $details['date_deces'] ?? $item['date_deces'] ?? $request->date_deces ?? null,
+                                'lieu_deces'            => $details['lieu_deces'] ?? $item['lieu_deces'] ?? $request->lieu_deces ?? '',
+                                'cause_deces'           => $details['cause_deces'] ?? $item['cause_deces'] ?? $request->cause_deces ?? null,
                             ]));
                             break;
 
                         case 'divorces':
+                            Log::info('Details pour divorce:', ['details' => $details]);
+                            Log::info('CommonData pour divorce:', ['commonData' => $commonData]);
+                            // S'assurer que $details est un tableau
+                            $details = (array) $details;
+
                             $acteModel = Divorce::create(array_merge($commonData, [
-                                'nom_epoux'     => $details['conjoint_nom'] ?? $item['nom_epoux'] ?? '',
-                                'prenom_epoux'  => $details['conjoint_prenom'] ?? $item['prenom_epoux'] ?? '',
-                                'nom_epouse'    => $details['conjointe_nom'] ?? $item['nom_epouse'] ?? '',
-                                'prenom_epouse' => $details['conjointe_prenom'] ?? $item['prenom_epouse'] ?? '',
-                                'date_jugement' => $details['date_demande_divorce'] ?? $item['date_jugement'] ?? null,
-                                'num_jugement'  => $details['num_jugement'] ?? $item['num_jugement'] ?? '',
-                                'tribunal'      => $details['tribunal'] ?? $item['tribunal'] ?? '',
+                                'nom_epoux'     => $details['conjoint_nom'] ?? '',
+                                'prenom_epoux'  => $details['conjoint_prenom'] ?? '',
+                                'nom_epouse'    => $details['conjointe_nom'] ?? '',
+                                'prenom_epouse' => $details['conjointe_prenom'] ?? '',
+                                'date_mariage'  => $details['date_mariage'] ?? null,
+                                'date_jugement' => $details['date_demande_divorce'] ?? null,
+                                'motif'         => $details['motif'] ?? null,
+                                'tribunal'      => $details['tribunal'] ?? 'À préciser',      // ✅ Ajout
+                                'num_jugement'  => $details['num_jugement'] ?? 'Non renseigné',
                             ]));
                             break;
 
@@ -298,7 +311,8 @@ class DemandeController extends Controller
                 ->get();
 
             return response()->json([
-                'demandes' => $demandes
+                'demandes' => $demandes,
+                'demandeActes' => $demandes->flatMap->demandeActes->values()
             ], 200);
 
         } catch (\Exception $e) {

@@ -29,7 +29,10 @@ return new class extends Migration
             // Informations sur le jugement/transcription
             $table->date('date_jugement');
             $table->string('tribunal'); // Ex: Tribunal de Première Instance d'Antananarivo
-            $table->string('num_transcription'); // Numéro d'acte/transcription
+            $table->string('num_jugement'); // Numéro d'acte/transcription
+            $table->string('num_acte')->nullable();
+            $table->date('date_mariage')->nullable();
+            $table->text('motif')->nullable();
             
             // Quantité demandée
             $table->integer('nbre_com');

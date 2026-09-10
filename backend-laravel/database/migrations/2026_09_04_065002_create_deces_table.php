@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Supprimer la table si elle existe
+        Schema::dropIfExists('deces');
+
         Schema::create('deces', function (Blueprint $table) {
             $table->id();
             
@@ -26,6 +29,7 @@ return new class extends Migration
             $table->date('date_naissance_defunt')->nullable();
             $table->date('date_deces');
             $table->string('lieu_deces');
+            $table->string('cause_deces');
             $table->string('num_acte');
             
             // Informations filiation (optionnel pour l'acte de décès)
@@ -35,7 +39,7 @@ return new class extends Migration
             $table->string('prenom_mere_defunt')->nullable();
             
             // Quantité demandée
-            $table->integer('nbre_com');
+            $table->integer('nbre_com')->default(1);
             
             $table->timestamps();
         });

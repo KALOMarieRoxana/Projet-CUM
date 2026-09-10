@@ -19,6 +19,7 @@ class Deces extends Model
         'date_naissance_defunt',
         'date_deces',
         'lieu_deces',
+        'cause_deces',
         'num_acte',
 
         // Options, langues et frais

@@ -215,10 +215,13 @@ export default function NouvelleDemande() {
 
   // Calcul du prix en fonction de la table BDD
   const calculerPrixUnitaire = (typeKey, langue, modeService) => {
+    console.log('🔍 calculerPrixUnitaire appelé avec :', { typeKey, langue, modeService });
     const typeObj = typesActes.find(t => t.type_acte === typeKey);
+    console.log('📦 typeObj trouvé :', typeObj);
     if (!typeObj) return 0;
 
     const champ = `montant${modeService.charAt(0).toUpperCase() + modeService.slice(1)}${langue.toUpperCase()}`;
+    console.log('🏷️ champ construit :', champ, 'valeur brute :', typeObj[champ]);
     return parseFloat(typeObj[champ]) || 0;
   };
 
@@ -359,6 +362,7 @@ export default function NouvelleDemande() {
 
   const champsSpecifiques = CHAMPS_SPECIFIQUES[selectionActe.type_acte] || [];
   const prixApercu = calculerPrixUnitaire(selectionActe.type_acte, selectionActe.langue, form.service);
+  console.log('💰 prixApercu calculé :', prixApercu);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F3F4F6', color: '#1F2937', fontFamily: 'Inter, sans-serif' }}>

@@ -21,9 +21,11 @@ class Divorce extends Model
 
         // Informations sur le jugement/transcription
         'date_jugement',
+        'date_mariage',
         'num_jugement',
         'tribunal',
         'num_acte',
+        'motif',
 
         // Options, langues et frais
         'langue',
