@@ -16,18 +16,11 @@ class CheckRole
             return redirect()->route('login');
         }
 
-        // Super admin a accès à tout
-        if ($user->role === 'super_admin') {
-            return $next($request);
+        // Vérification stricte : le rôle doit être dans la liste
+        if (!in_array($user->role, $roles)) {
+            abort(403, 'Accès non autorisé.');
         }
 
-        // Vérifier si le rôle correspond
-        foreach ($roles as $role) {
-            if ($user->role === $role) {
-                return $next($request);
-            }
-        }
-
-        abort(403, 'Accès non autorisé.');
+        return $next($request);
     }
 }

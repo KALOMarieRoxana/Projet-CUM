@@ -16,10 +16,15 @@ Auth::routes();
 // ROUTE DASHBOARD (Redirection dynamique)
 // =============================
 Route::middleware(['auth'])->get('/dashboard', function () {
+    $user = auth()->user();
+    
     if (auth()->user()->isSuperAdmin()) {
         return redirect()->route('super-admin.dashboard');
     }
-    return redirect()->route('admin.dashboard');
+    if (auth()->user()->isAdmin()) {
+        return redirect()->route('admin.dashboard');
+    }
+    return redirect()->route('login');
 })->name('dashboard');
 
 // =============================
@@ -29,12 +34,17 @@ Route::get('/', function () {
     if (!auth()->check()) {
         return redirect()->route('login');
     }
+    $user = auth()->user();
 
     if (auth()->user()->isSuperAdmin()) {
         return redirect()->route('super-admin.dashboard');
     }
 
-    return redirect()->route('admin.dashboard');
+    if (auth()->user()->isAdmin()) {
+        return redirect()->route('admin.dashboard');
+    }
+
+    return redirect()->route('login');
 });
 
 // =============================

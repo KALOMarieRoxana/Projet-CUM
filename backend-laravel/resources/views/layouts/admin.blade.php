@@ -148,10 +148,14 @@
 
         @if (Auth::user()->isSuperAdmin())
             <a href="{{ route('super-admin.demandes') }}" class="nav-link {{ request()->routeIs('super-admin.demandes*') ? 'active' : '' }}">
-                <i class="bi bi-inbox"></i> Toutes les demandes
+                <i class="bi bi-inbox"></i> Demandes
             </a>
-            <a href="{{ route('super-admin.admins') }}" class="nav-link {{ request()->routeIs('super-admin.admins*') ? 'active' : '' }}">
+            <a href="{{ route('super-admin.admins.index') }}" class="nav-link {{ request()->routeIs('super-admin.admins*') ? 'active' : '' }}">
                 <i class="bi bi-people"></i> Administrateurs
+            </a>
+        @else
+            <a href="{{ route('admin.demandes') }}" class="nav-link {{ request()->routeIs('admin.demandes*') ? 'active' : '' }}">
+                <i class="bi bi-inbox"></i> Demandes
             </a>
         @endif
 

@@ -53,7 +53,7 @@ class User extends Authenticatable
      */
     public function isSuperAdmin(): bool
     {
-        return $this->role === 'super-admin';
+        return $this->role === 'super_admin';
     }
 
     /**
@@ -61,6 +61,6 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->role === 'admin' || $this->role === 'super-admin' || $this->is_admin;
+        return $this->role === 'admin';
     }
 }
