@@ -1,30 +1,20 @@
 ﻿import { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../theme/ThemeContext';
+import ThemeSwitcher from '../components/ThemeSwitcher';
 import api from '../api/axiosConfig';
 import {
   FileText, Clock, CheckCircle, XCircle, LogOut, Plus,
-  User, Phone, MapPin, Mail, Bell, ChevronRight,
+  Phone, MapPin, Mail, Bell, ChevronRight,
   Zap, Shield, AlertCircle, Home, ChevronDown,
   UserCircle, Award, Key, X, Eye, EyeOff
 } from 'lucide-react';
 import logo from '../assets/image/logo.png';
 
-const COULEURS_STATUT = {
-  'en attente': { bg: '#FEF3C7', texte: '#92400E', border: '#F59E0B', icon: Clock },
-  'acceptée':   { bg: '#D1FAE5', texte: '#065F46', border: '#10B981', icon: CheckCircle },
-  'refusée':    { bg: '#FEE2E2', texte: '#991B1B', border: '#EF4444', icon: XCircle },
-};
-
-const LABELS_TYPE = {
-  naissance: 'Acte de naissance',
-  mariage: 'Acte de mariage',
-  deces: 'Acte de décès',
-  divorce: 'Acte de divorce',
-};
-
 export default function Dashboard() {
   const { utilisateur, deconnecter } = useAuth();
+  const { colors } = useTheme();
   const navigate = useNavigate();
   const [profilDetaille, setProfilDetaille] = useState(null);
   const [mesDemandes, setMesDemandes] = useState([]);
@@ -44,6 +34,43 @@ export default function Dashboard() {
   const [chargementMdp, setChargementMdp] = useState(false);
   const menuRef = useRef(null);
   const modalRef = useRef(null);
+
+  const COULEURS_STATUT = {
+    'en attente': { bg: '#FEF3C7', texte: '#92400E', border: '#F59E0B', icon: Clock },
+    'acceptée':   { bg: '#D1FAE5', texte: '#065F46', border: '#10B981', icon: CheckCircle },
+    'refusée':    { bg: '#FEE2E2', texte: '#991B1B', border: '#EF4444', icon: XCircle },
+  };
+
+  const LABELS_TYPE = {
+    naissance: 'Acte de naissance',
+    mariage: 'Acte de mariage',
+    deces: 'Acte de décès',
+    divorce: 'Acte de divorce',
+    divorces: 'Acte de divorce',
+  };
+
+  // ✅ Fonction robuste pour extraire le nom du type d'acte
+  const getNomTypeActe = (acte) => {
+    // Cas 1 : type_acte est un objet (relation chargée par Laravel)
+    if (acte?.type_acte && typeof acte.type_acte === 'object') {
+      return acte.type_acte.nom
+        || LABELS_TYPE[acte.type_acte.type_acte]
+        || acte.type_acte.type_acte
+        || 'Acte';
+    }
+    // Cas 2 : type_acte est une string (slug)
+    if (typeof acte?.type_acte === 'string') {
+      return LABELS_TYPE[acte.type_acte] || acte.type_acte;
+    }
+    // Cas 3 : relation typeActe (camelCase)
+    if (acte?.typeActe) {
+      return acte.typeActe.nom
+        || LABELS_TYPE[acte.typeActe.type_acte]
+        || acte.typeActe.type_acte
+        || 'Acte';
+    }
+    return 'Acte';
+  };
 
   useEffect(() => {
     if (!utilisateur) { navigate('/connexion'); return; }
@@ -68,7 +95,17 @@ export default function Dashboard() {
         api.get('/demandes/mes-demandes')
       ]);
       setProfilDetaille(resProfil.data.utilisateur);
-      setMesDemandes(resDemandes.data.demandes);
+      const demandes = resDemandes.data.demandes || [];
+      setMesDemandes(demandes);
+
+      // 🔍 DEBUG : afficher la structure exacte pour diagnostic
+      if (demandes.length > 0) {
+        const premierActe = demandes[0]?.demande_actes?.[0] || demandes[0]?.demandeActes?.[0];
+        console.log('🔍 Structure du premier acte :', premierActe);
+        console.log('🔍 type_acte :', premierActe?.type_acte);
+        console.log('🔍 typeof type_acte :', typeof premierActe?.type_acte);
+        console.log('🔍 typeActe :', premierActe?.typeActe);
+      }
     } catch (err) {
       setErreur('Impossible de charger vos données.');
     } finally {
@@ -151,16 +188,16 @@ export default function Dashboard() {
   const demandesRefusees = mesDemandes.filter(d => d.statut === 'refusée').length;
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#F3F4F6', color: '#1F2937', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: 'Inter, sans-serif' }}>
 
       {/* ===== SIDEBAR ===== */}
-      <div style={{ width: 240, background: '#FFFFFF', borderRight: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', padding: '24px 0', position: 'fixed', height: '100vh', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-        <div style={{ padding: '0 20px 24px', borderBottom: '1px solid #E5E7EB' }}>
+      <div style={{ width: 240, background: colors.sidebar, borderRight: `1px solid ${colors.sidebarBorder}`, display: 'flex', flexDirection: 'column', padding: '24px 0', position: 'fixed', height: '100vh', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <div style={{ padding: '0 20px 24px', borderBottom: `1px solid ${colors.sidebarBorder}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <img src={logo} alt="Logo" style={{ width: 40, height: 40, objectFit: 'contain' }} />
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>Portail Citoyen</div>
-              <div style={{ fontSize: 11, color: '#6B7280' }}>État Civil</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>Portail Citoyen</div>
+              <div style={{ fontSize: 11, color: colors.textSecondary }}>État Civil</div>
             </div>
           </div>
         </div>
@@ -175,8 +212,8 @@ export default function Dashboard() {
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
                 borderRadius: 8, marginBottom: 4,
-                background: actif ? 'rgba(99,102,241,0.08)' : 'transparent',
-                color: actif ? '#4F46E5' : '#6B7280',
+                background: actif ? colors.primaryLight : 'transparent',
+                color: actif ? colors.primary : colors.textSecondary,
                 cursor: 'pointer', transition: 'all 0.2s',
                 fontWeight: actif ? 600 : 400
               }}>
@@ -187,8 +224,8 @@ export default function Dashboard() {
           ))}
         </nav>
 
-        <div style={{ padding: '16px 12px', borderTop: '1px solid #E5E7EB' }}>
-          <button onClick={gererDeconnexion} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: '#DC2626', cursor: 'pointer', fontSize: 13 }}>
+        <div style={{ padding: '16px 12px', borderTop: `1px solid ${colors.sidebarBorder}` }}>
+          <button onClick={gererDeconnexion} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: colors.danger, cursor: 'pointer', fontSize: 13 }}>
             <LogOut size={16} />
             Se déconnecter
           </button>
@@ -201,17 +238,20 @@ export default function Dashboard() {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
           <div>
-            <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Bienvenue,</div>
-            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>
+            <div style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 4 }}>Bienvenue,</div>
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: colors.text }}>
               {profilDetaille?.prenom} {profilDetaille?.nom}
             </h1>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button style={{ width: 38, height: 38, borderRadius: 10, border: '1px solid #E5E7EB', background: '#FFFFFF', color: '#6B7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button style={{ width: 38, height: 38, borderRadius: 10, border: `1px solid ${colors.cardBorder}`, background: colors.card, color: colors.textSecondary, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Bell size={16} />
             </button>
+
+            <ThemeSwitcher />
+
             <Link to="/nouvelle-demande" style={{ textDecoration: 'none' }}>
-              <button style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+              <button style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 10, border: 'none', background: colors.primaryGradient, color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
                 <Plus size={15} />
                 Nouvelle demande
               </button>
@@ -219,19 +259,19 @@ export default function Dashboard() {
 
             {/* Profil avec menu */}
             <div ref={menuRef} style={{ position: 'relative' }}>
-              <div onClick={toggleMenuProfil} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px 6px 6px', borderRadius: 50, border: '1px solid #E5E7EB', background: '#FFFFFF', cursor: 'pointer', boxShadow: menuProfilOuvert ? '0 4px 6px rgba(0,0,0,0.1)' : 'none' }}>
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>
+              <div onClick={toggleMenuProfil} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px 6px 6px', borderRadius: 50, border: `1px solid ${colors.cardBorder}`, background: colors.card, cursor: 'pointer', boxShadow: menuProfilOuvert ? '0 4px 6px rgba(0,0,0,0.1)' : 'none' }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: colors.primaryGradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>
                   {profilDetaille?.nom?.charAt(0)}{profilDetaille?.prenom?.charAt(0)}
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 500, color: '#111827' }}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: colors.text }}>
                   {profilDetaille?.prenom} {profilDetaille?.nom}
                 </div>
-                <ChevronDown size={14} color="#6B7280" style={{ transform: menuProfilOuvert ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+                <ChevronDown size={14} color={colors.textSecondary} style={{ transform: menuProfilOuvert ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
               </div>
 
               {menuProfilOuvert && (
-                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 280, background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', boxShadow: '0 10px 30px rgba(0,0,0,0.15)', overflow: 'hidden', zIndex: 1000 }}>
-                  <div style={{ padding: '16px 20px', background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 280, background: colors.card, borderRadius: 14, border: `1px solid ${colors.cardBorder}`, boxShadow: '0 10px 30px rgba(0,0,0,0.15)', overflow: 'hidden', zIndex: 1000 }}>
+                  <div style={{ padding: '16px 20px', background: colors.primaryGradient, display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#fff', border: '2px solid rgba(255,255,255,0.3)' }}>
                       {profilDetaille?.nom?.charAt(0)}{profilDetaille?.prenom?.charAt(0)}
                     </div>
@@ -242,20 +282,20 @@ export default function Dashboard() {
                   </div>
 
                   <div style={{ padding: '8px 12px' }}>
-                    <button onClick={ouvrirModalCompte} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: '#111827', cursor: 'pointer', fontSize: 13 }} onMouseEnter={(e) => e.currentTarget.style.background = '#F3F4F6'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-                      <UserCircle size={16} color="#4F46E5" />
+                    <button onClick={ouvrirModalCompte} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: colors.text, cursor: 'pointer', fontSize: 13 }} onMouseEnter={(e) => e.currentTarget.style.background = colors.input} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                      <UserCircle size={16} color={colors.primary} />
                       <span style={{ flex: 1, textAlign: 'left' }}>Mon compte</span>
-                      <ChevronRight size={14} color="#9CA3AF" />
+                      <ChevronRight size={14} color={colors.textMuted} />
                     </button>
 
-                    <button onClick={ouvrirModalChangerMdp} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: '#111827', cursor: 'pointer', fontSize: 13 }} onMouseEnter={(e) => e.currentTarget.style.background = '#F3F4F6'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                    <button onClick={ouvrirModalChangerMdp} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: colors.text, cursor: 'pointer', fontSize: 13 }} onMouseEnter={(e) => e.currentTarget.style.background = colors.input} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
                       <Key size={16} color="#D97706" />
                       <span style={{ flex: 1, textAlign: 'left' }}>Changer mot de passe</span>
-                      <ChevronRight size={14} color="#9CA3AF" />
+                      <ChevronRight size={14} color={colors.textMuted} />
                     </button>
 
-                    <div style={{ borderTop: '1px solid #F3F4F6', marginTop: 4, paddingTop: 4 }}>
-                      <button onClick={gererDeconnexion} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: '#DC2626', cursor: 'pointer', fontSize: 13 }} onMouseEnter={(e) => e.currentTarget.style.background = '#FEE2E2'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                    <div style={{ borderTop: `1px solid ${colors.cardBorder}`, marginTop: 4, paddingTop: 4 }}>
+                      <button onClick={gererDeconnexion} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: colors.danger, cursor: 'pointer', fontSize: 13 }}>
                         <LogOut size={16} />
                         <span style={{ flex: 1, textAlign: 'left', fontWeight: 600 }}>Se déconnecter</span>
                       </button>
@@ -276,16 +316,16 @@ export default function Dashboard() {
         {/* ===== CARTES STATISTIQUES ===== */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
           {[
-            { label: 'Total demandes', valeur: totalDemandes, icon: FileText, couleur: '#4F46E5', bg: 'rgba(99,102,241,0.1)' },
+            { label: 'Total demandes', valeur: totalDemandes, icon: FileText, couleur: colors.primary, bg: colors.primaryLight },
             { label: 'En attente', valeur: demandesEnAttente, icon: Clock, couleur: '#D97706', bg: 'rgba(245,158,11,0.1)' },
             { label: 'Acceptées', valeur: demandesAcceptees, icon: CheckCircle, couleur: '#059669', bg: 'rgba(16,185,129,0.1)' },
             { label: 'Refusées', valeur: demandesRefusees, icon: XCircle, couleur: '#DC2626', bg: 'rgba(239,68,68,0.1)' },
           ].map(({ label, valeur, icon: Icon, couleur, bg }) => (
-            <div key={label} style={{ background: '#FFFFFF', borderRadius: 14, padding: '20px 22px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+            <div key={label} style={{ background: colors.card, borderRadius: 14, padding: '20px 22px', border: `1px solid ${colors.cardBorder}`, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 8 }}>{label}</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: '#111827' }}>{valeur}</div>
+                  <div style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>{label}</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: colors.text }}>{valeur}</div>
                 </div>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Icon size={18} color={couleur} />
@@ -295,22 +335,22 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* ===== MES DEMANDES (pleine largeur) ===== */}
-        <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', marginBottom: 24 }}>
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#111827' }}>Mes demandes</h3>
-            <Link to="/nouvelle-demande" style={{ fontSize: 12, color: '#4F46E5', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+        {/* ===== MES DEMANDES ===== */}
+        <div style={{ background: colors.card, borderRadius: 14, border: `1px solid ${colors.cardBorder}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', marginBottom: 24 }}>
+          <div style={{ padding: '20px 24px', borderBottom: `1px solid ${colors.cardBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: colors.text }}>Mes demandes</h3>
+            <Link to="/nouvelle-demande" style={{ fontSize: 12, color: colors.primary, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
               Nouvelle <ChevronRight size={13} />
             </Link>
           </div>
 
           {chargement ? (
-            <div style={{ padding: 24, textAlign: 'center', color: '#6B7280', fontSize: 13 }}>Chargement…</div>
+            <div style={{ padding: 24, textAlign: 'center', color: colors.textSecondary, fontSize: 13 }}>Chargement…</div>
           ) : mesDemandes.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center' }}>
-              <FileText size={32} color="#9CA3AF" style={{ marginBottom: 12 }} />
-              <div style={{ color: '#6B7280', fontSize: 13 }}>Aucune demande pour le moment</div>
-              <Link to="/nouvelle-demande" style={{ display: 'inline-block', marginTop: 12, padding: '8px 16px', borderRadius: 8, background: 'rgba(99,102,241,0.1)', color: '#4F46E5', textDecoration: 'none', fontSize: 13 }}>
+              <FileText size={32} color={colors.textMuted} style={{ marginBottom: 12 }} />
+              <div style={{ color: colors.textSecondary, fontSize: 13 }}>Aucune demande pour le moment</div>
+              <Link to="/nouvelle-demande" style={{ display: 'inline-block', marginTop: 12, padding: '8px 16px', borderRadius: 8, background: colors.primaryLight, color: colors.primary, textDecoration: 'none', fontSize: 13 }}>
                 Créer une demande
               </Link>
             </div>
@@ -319,45 +359,56 @@ export default function Dashboard() {
               {mesDemandes.map((d, index) => {
                 const config = COULEURS_STATUT[d.statut] || COULEURS_STATUT['en attente'];
                 const IconStatut = config.icon;
+
                 const actes = d.demande_actes || d.demandeActes || [];
                 const nbActes = actes.reduce((sum, a) => sum + (a.quantite || 1), 0);
                 const totalPrix = actes.reduce((sum, a) => sum + (parseFloat(a.prix_unitaire || 0) * (a.quantite || 1)), 0);
-                
+
+                // ✅ Utilise la fonction robuste
+                const nomsTypesActes = actes.map(a => getNomTypeActe(a)).filter(Boolean).join(', ');
+
                 return (
-                  <div key={d.id_demande} style={{ padding: '16px 24px', borderBottom: index < mesDemandes.length - 1 ? '1px solid #F3F4F6' : 'none', display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: config.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div key={d.id_demande} style={{ padding: '16px 24px', borderBottom: index < mesDemandes.length - 1 ? `1px solid ${colors.cardBorder}` : 'none', display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: config.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 4 }}>
                       <IconStatut size={18} color={config.texte} />
                     </div>
+
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* Ligne 1: Reference + Status + Date */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>
+                      {/* Ligne 1 : Référence + Date */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: colors.text }}>
                           {d.reference || `DEM-${d.id_demande}`}
                         </span>
-                        <span style={{ fontSize: 11, color: '#9CA3AF' }}>
+                        <span style={{ fontSize: 11, color: colors.textMuted }}>
                           {new Date(d.created_at).toLocaleDateString('fr-FR')}
                         </span>
                       </div>
 
-                      {/* Ligne 2 : Demandeur / Concerné / Nombre d'actes / Type d'acte */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, fontSize: 12, color: '#6B7280', marginBottom: 4 }}>
+                      {/* Ligne 2 : Demandeur / Concerné */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, fontSize: 12, color: colors.textSecondary, marginBottom: 6 }}>
                         <div>
                           <span style={{ fontWeight: 500 }}>Demandeur :</span> {d.demandeur_prenom} {d.demandeur_nom}
                         </div>
                         <div>
-                          <span style={{ fontWeight: 500 }}>Concerné :</span> {d.concerne_prenom} {d.concerne_nom}
-                        </div>
-                        <div>
-                          <span style={{ fontWeight: 500 }}>Actes :</span> {nbActes}
-                        </div>
-                        <div>
-                          <span style={{ fontWeight: 500 }}>Type :</span> {actes.map(a => LABELS_TYPE[a.type_acte?.type_acte] || a.type_acte).join(', ')}
+                          <span style={{ fontWeight: 500 }}>Concerné :</span> {d.personne_prenom} {d.personne_nom}
                         </div>
                       </div>
 
-                      {/* Ligne 3: Prix total + service */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>
+                      {/* Ligne 3 : Nombre d'actes + Type d'actes */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, fontSize: 12, color: colors.textSecondary, marginBottom: 6 }}>
+                        <div>
+                          <span style={{ fontWeight: 500 }}>Nombre d'actes :</span> {nbActes}
+                        </div>
+                        {nomsTypesActes && (
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ fontWeight: 500 }}>Type d'acte(s) :</span> {nomsTypesActes}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Ligne 4 : Prix + Service */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: colors.primary }}>
                           {new Intl.NumberFormat('fr-FR').format(totalPrix || d.prix_total || d.prix || 0)} Ar
                         </span>
                         {d.service === 'express' && (
@@ -366,12 +417,14 @@ export default function Dashboard() {
                           </span>
                         )}
                         {(!d.service || d.service === 'standard') && (
-                          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: 'rgba(99,102,241,0.1)', color: '#4F46E5', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+                          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: colors.primaryLight, color: colors.primary, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
                             <Shield size={10} /> Standard
                           </span>
                         )}
                       </div>
                     </div>
+
+                    {/* Statut à droite */}
                     <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, background: config.bg, color: config.texte, fontWeight: 600, border: `1px solid ${config.border}33`, flexShrink: 0 }}>
                       {d.statut}
                     </span>
@@ -382,19 +435,19 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* ===== SERVICES DISPONIBLES (sous Mes demandes) ===== */}
-        <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5E7EB', padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-          <h4 style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 600, color: '#111827' }}>Services disponibles</h4>
+        {/* ===== SERVICES DISPONIBLES ===== */}
+        <div style={{ background: colors.card, borderRadius: 14, border: `1px solid ${colors.cardBorder}`, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+          <h4 style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 600, color: colors.text }}>Services disponibles</h4>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {[
-              { icon: Shield, label: 'Standard', desc: 'Délai normal', couleur: '#4F46E5', bg: 'rgba(99,102,241,0.08)' },
+              { icon: Shield, label: 'Standard', desc: 'Délai normal', couleur: colors.primary, bg: colors.primaryLight },
               { icon: Zap, label: 'Express', desc: 'Traitement rapide', couleur: '#D97706', bg: 'rgba(245,158,11,0.08)' },
             ].map(({ icon: Icon, label, desc, couleur, bg }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, background: bg }}>
                 <Icon size={18} color={couleur} />
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{label}</div>
-                  <div style={{ fontSize: 11, color: '#6B7280' }}>{desc}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{label}</div>
+                  <div style={{ fontSize: 11, color: colors.textSecondary }}>{desc}</div>
                 </div>
               </div>
             ))}
@@ -402,13 +455,12 @@ export default function Dashboard() {
         </div>
 
       </div>
-      {/* ===== FIN CONTENU PRINCIPAL ===== */}
 
       {/* ===== MODALE MON COMPTE ===== */}
       {modalCompteOuvert && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(4px)' }}>
-          <div ref={modalRef} style={{ background: '#FFFFFF', borderRadius: 16, width: '100%', maxWidth: 480, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
+          <div ref={modalRef} style={{ background: colors.card, borderRadius: 16, width: '100%', maxWidth: 480, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${colors.cardBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: colors.primaryGradient, color: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <UserCircle size={20} />
                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Mon compte</h3>
@@ -420,12 +472,12 @@ export default function Dashboard() {
 
             <div style={{ padding: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: '#fff' }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: colors.primaryGradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: '#fff' }}>
                   {profilDetaille?.nom?.charAt(0)}{profilDetaille?.prenom?.charAt(0)}
                 </div>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#111827' }}>{profilDetaille?.prenom} {profilDetaille?.nom}</div>
-                  <div style={{ fontSize: 12, color: '#6B7280' }}>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: colors.text }}>{profilDetaille?.prenom} {profilDetaille?.nom}</div>
+                  <div style={{ fontSize: 12, color: colors.textSecondary }}>
                     <Award size={12} style={{ display: 'inline', marginRight: 4 }} />
                     Citoyen
                   </div>
@@ -433,7 +485,7 @@ export default function Dashboard() {
               </div>
 
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12 }}>
                   Informations personnelles
                 </div>
                 {[
@@ -441,17 +493,17 @@ export default function Dashboard() {
                   { icon: Phone, label: 'Téléphone', value: profilDetaille?.contact || 'Non renseigné' },
                   { icon: MapPin, label: 'Adresse', value: profilDetaille?.adresse || 'Non renseignée' },
                 ].map(({ icon: Icon, label, value }) => (
-                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#F9FAFB', borderRadius: 8, marginBottom: 8 }}>
-                    <Icon size={16} color="#6B7280" />
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: colors.input, borderRadius: 8, marginBottom: 8 }}>
+                    <Icon size={16} color={colors.textSecondary} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 11, color: '#6B7280' }}>{label}</div>
-                      <div style={{ fontSize: 13, color: '#111827', fontWeight: 500 }}>{value}</div>
+                      <div style={{ fontSize: 11, color: colors.textSecondary }}>{label}</div>
+                      <div style={{ fontSize: 13, color: colors.text, fontWeight: 500 }}>{value}</div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <button onClick={ouvrirModalChangerMdp} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#FFFFFF', color: '#4F46E5', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+              <button onClick={ouvrirModalChangerMdp} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 8, border: `1px solid ${colors.cardBorder}`, background: colors.card, color: colors.primary, cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
                 <Key size={16} />
                 Changer mon mot de passe
               </button>
@@ -463,8 +515,8 @@ export default function Dashboard() {
       {/* ===== MODALE CHANGER MOT DE PASSE ===== */}
       {modalChangerMdpOuvert && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(4px)' }}>
-          <div ref={modalRef} style={{ background: '#FFFFFF', borderRadius: 16, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
+          <div ref={modalRef} style={{ background: colors.card, borderRadius: 16, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${colors.cardBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: colors.primaryGradient, color: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <Key size={20} />
                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Changer mot de passe</h3>
@@ -495,28 +547,28 @@ export default function Dashboard() {
                 { label: 'Confirmer le mot de passe', value: confirmerMotDePasse, setter: setConfirmerMotDePasse, visible: afficherConfirmerMdp, toggle: () => setAfficherConfirmerMdp(!afficherConfirmerMdp), placeholder: 'Confirmez votre nouveau mot de passe' },
               ].map(({ label, value, setter, visible, toggle, placeholder, hint }) => (
                 <div key={label} style={{ marginBottom: 16 }}>
-                  <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>{label}</label>
+                  <label style={{ fontSize: 12, fontWeight: 500, color: colors.text, display: 'block', marginBottom: 4 }}>{label}</label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type={visible ? 'text' : 'password'}
                       value={value}
                       onChange={(e) => setter(e.target.value)}
                       placeholder={placeholder}
-                      style={{ width: '100%', padding: '10px 40px 10px 12px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13, color: '#111827', background: '#F9FAFB', outline: 'none' }}
+                      style={{ width: '100%', padding: '10px 40px 10px 12px', borderRadius: 8, border: `1px solid ${colors.inputBorder}`, fontSize: 13, color: colors.text, background: colors.input, outline: 'none' }}
                     />
-                    <button type="button" onClick={toggle} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', padding: 4 }}>
+                    <button type="button" onClick={toggle} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: colors.textSecondary, cursor: 'pointer', padding: 4 }}>
                       {visible ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
-                  {hint && <div style={{ fontSize: 11, color: '#6B7280', marginTop: 4 }}>{hint}</div>}
+                  {hint && <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>{hint}</div>}
                 </div>
               ))}
 
               <div style={{ display: 'flex', gap: 10 }}>
-                <button type="button" onClick={fermerModalChangerMdp} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#FFFFFF', color: '#6B7280', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+                <button type="button" onClick={fermerModalChangerMdp} style={{ flex: 1, padding: '10px', borderRadius: 8, border: `1px solid ${colors.cardBorder}`, background: colors.card, color: colors.textSecondary, cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
                   Annuler
                 </button>
-                <button type="submit" disabled={chargementMdp} style={{ flex: 2, padding: '10px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', cursor: chargementMdp ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: chargementMdp ? 0.7 : 1 }}>
+                <button type="submit" disabled={chargementMdp} style={{ flex: 2, padding: '10px', borderRadius: 8, border: 'none', background: colors.primaryGradient, color: '#fff', cursor: chargementMdp ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: chargementMdp ? 0.7 : 1 }}>
                   {chargementMdp ? 'Changement en cours...' : 'Changer le mot de passe'}
                 </button>
               </div>

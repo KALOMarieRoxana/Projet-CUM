@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../theme/ThemeContext';
+import ThemeSwitcher from '../components/ThemeSwitcher';
 import Statistiques from '../pages/Statistiques';
 import api from '../api/axiosConfig';
 import {
@@ -74,6 +76,7 @@ const CHAMPS_SPECIFIQUES = {
 
 export default function MesDemandes() {
   const { utilisateur, deconnecter } = useAuth();
+  const { colors } = useTheme();
   const navigate = useNavigate();
   const [demandes, setDemandes] = useState([]);
   const [chargement, setChargement] = useState(true);
@@ -160,23 +163,23 @@ export default function MesDemandes() {
 
   if (chargement) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#F3F4F6' }}>
-        <div style={{ fontSize: 16, color: '#6B7280' }}>Chargement de vos demandes...</div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: colors.bg }}>
+        <div style={{ fontSize: 16, color: colors.textSecondary }}>Chargement de vos demandes...</div>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#F3F4F6', color: '#1F2937', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: 'Inter, sans-serif' }}>
 
       {/* ===== SIDEBAR ===== */}
-      <div style={{ width: 240, background: '#FFFFFF', borderRight: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', padding: '24px 0', position: 'fixed', height: '100vh' }}>
-        <div style={{ padding: '0 20px 24px', borderBottom: '1px solid #E5E7EB' }}>
+      <div style={{ width: 240, background: colors.sidebar, borderRight: `1px solid ${colors.sidebarBorder}`, display: 'flex', flexDirection: 'column', padding: '24px 0', position: 'fixed', height: '100vh' }}>
+        <div style={{ padding: '0 20px 24px', borderBottom: `1px solid ${colors.sidebarBorder}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <img src={logo} alt="Logo" style={{ width: 40, height: 40, objectFit: 'contain' }} />
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>Portail Citoyen</div>
-              <div style={{ fontSize: 11, color: '#6B7280' }}>État Civil</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>Portail Citoyen</div>
+              <div style={{ fontSize: 11, color: colors.textSecondary }}>État Civil</div>
             </div>
           </div>
         </div>
@@ -188,7 +191,7 @@ export default function MesDemandes() {
             { icon: Plus, label: 'Nouvelle demande', actif: false, lien: '/nouvelle-demande' },
           ].map(({ icon: Icon, label, actif, lien }) => (
             <Link key={label} to={lien} style={{ textDecoration: 'none' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, marginBottom: 4, background: actif ? 'rgba(99,102,241,0.08)' : 'transparent', color: actif ? '#4F46E5' : '#6B7280', fontWeight: actif ? 600 : 400 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, marginBottom: 4, background: actif ? colors.primaryLight : 'transparent', color: actif ? colors.primary : colors.textSecondary, fontWeight: actif ? 600 : 400 }}>
                 <Icon size={16} />
                 <span style={{ fontSize: 13 }}>{label}</span>
               </div>
@@ -196,8 +199,8 @@ export default function MesDemandes() {
           ))}
         </nav>
 
-        <div style={{ padding: '16px 12px', borderTop: '1px solid #E5E7EB' }}>
-          <button onClick={gererDeconnexion} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: '#DC2626', cursor: 'pointer', fontSize: 13 }}>
+        <div style={{ padding: '16px 12px', borderTop: `1px solid ${colors.sidebarBorder}` }}>
+          <button onClick={gererDeconnexion} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: colors.danger, cursor: 'pointer', fontSize: 13 }}>
             <LogOut size={16} />
             Se déconnecter
           </button>
@@ -207,14 +210,13 @@ export default function MesDemandes() {
       {/* ===== CONTENU PRINCIPAL ===== */}
       <div style={{ marginLeft: 240, flex: 1, padding: '32px 32px' }}>
 
-        {/* En-tête avec onglets */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Link to="/tableau-de-bord" style={{ color: '#4F46E5', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Link to="/tableau-de-bord" style={{ color: colors.primary, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
               <ArrowLeft size={18} />
               <span style={{ fontSize: 13 }}>Retour</span>
             </Link>
-            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>Mes demandes</h1>
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: colors.text }}>Mes demandes</h1>
             <div style={{ display: 'flex', gap: 4, marginLeft: 24 }}>
               <button
                 onClick={() => setOngletActif('demandes')}
@@ -222,8 +224,8 @@ export default function MesDemandes() {
                   padding: '6px 16px',
                   borderRadius: 8,
                   border: 'none',
-                  background: ongletActif === 'demandes' ? '#EEF2FF' : 'transparent',
-                  color: ongletActif === 'demandes' ? '#4F46E5' : '#6B7280',
+                  background: ongletActif === 'demandes' ? colors.primaryLight : 'transparent',
+                  color: ongletActif === 'demandes' ? colors.primary : colors.textSecondary,
                   fontSize: 13,
                   fontWeight: ongletActif === 'demandes' ? 600 : 400,
                   cursor: 'pointer'
@@ -237,8 +239,8 @@ export default function MesDemandes() {
                   padding: '6px 16px',
                   borderRadius: 8,
                   border: 'none',
-                  background: ongletActif === 'statistiques' ? '#EEF2FF' : 'transparent',
-                  color: ongletActif === 'statistiques' ? '#4F46E5' : '#6B7280',
+                  background: ongletActif === 'statistiques' ? colors.primaryLight : 'transparent',
+                  color: ongletActif === 'statistiques' ? colors.primary : colors.textSecondary,
                   fontSize: 13,
                   fontWeight: ongletActif === 'statistiques' ? 600 : 400,
                   cursor: 'pointer'
@@ -249,11 +251,14 @@ export default function MesDemandes() {
             </div>
           </div>
 
-          <Link to="/nouvelle-demande">
-            <button style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#FFF', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Plus size={16} /> Nouvelle demande
-            </button>
-          </Link>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <ThemeSwitcher />
+            <Link to="/nouvelle-demande">
+              <button style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: colors.primaryGradient, color: '#FFF', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Plus size={16} /> Nouvelle demande
+              </button>
+            </Link>
+          </div>
         </div>
 
         {erreur && (
@@ -262,22 +267,22 @@ export default function MesDemandes() {
           </div>
         )}
 
-        {/* ===== CARTES STATISTIQUES HAUT ===== */}
+        {/* ===== STATISTIQUES HAUT ===== */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
           {[
-            { label: 'Total demandes', value: stats.total, icon: FileText, color: '#6366F1', bg: '#EEF2FF' },
+            { label: 'Total demandes', value: stats.total, icon: FileText, color: colors.primary, bg: colors.primaryLight },
             { label: 'En attente', value: stats.en_attente, icon: Clock, color: '#F59E0B', bg: '#FEF3C7' },
             { label: 'Acceptées', value: stats.acceptees, icon: CheckCircle, color: '#10B981', bg: '#D1FAE5' },
             { label: 'Refusées', value: stats.refusees, icon: X, color: '#EF4444', bg: '#FEE2E2' },
           ].map((stat, index) => (
-            <div key={index} style={{ background: '#FFFFFF', padding: '16px 20px', borderRadius: 12, border: '1px solid #E5E7EB' }}>
+            <div key={index} style={{ background: colors.card, padding: '16px 20px', borderRadius: 12, border: `1px solid ${colors.cardBorder}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ padding: 8, borderRadius: 8, background: stat.bg, color: stat.color }}>
                   <stat.icon size={18} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: '#111827' }}>{stat.value}</div>
-                  <div style={{ fontSize: 12, color: '#6B7280' }}>{stat.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: colors.text }}>{stat.value}</div>
+                  <div style={{ fontSize: 12, color: colors.textSecondary }}>{stat.label}</div>
                 </div>
               </div>
             </div>
@@ -287,7 +292,6 @@ export default function MesDemandes() {
         {/* ===== ONGLET DEMANDES ===== */}
         {ongletActif === 'demandes' && (
           <>
-            {/* FILTRES ET RECHERCHE */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
               <div style={{ display: 'flex', gap: 8 }}>
                 {['tous', 'en_attente', 'en_cours', 'acceptée', 'refusée'].map(statut => (
@@ -297,9 +301,9 @@ export default function MesDemandes() {
                     style={{
                       padding: '6px 14px',
                       borderRadius: 20,
-                      border: filtreStatut === statut ? '2px solid #4F46E5' : '1px solid #E5E7EB',
-                      background: filtreStatut === statut ? '#EEF2FF' : '#FFF',
-                      color: filtreStatut === statut ? '#4F46E5' : '#6B7280',
+                      border: filtreStatut === statut ? `2px solid ${colors.primary}` : `1px solid ${colors.cardBorder}`,
+                      background: filtreStatut === statut ? colors.primaryLight : colors.card,
+                      color: filtreStatut === statut ? colors.primary : colors.textSecondary,
                       fontSize: 12,
                       fontWeight: filtreStatut === statut ? 600 : 400,
                       cursor: 'pointer'
@@ -311,24 +315,23 @@ export default function MesDemandes() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
-                <Search size={16} style={{ position: 'absolute', left: 12, color: '#9CA3AF' }} />
+                <Search size={16} style={{ position: 'absolute', left: 12, color: colors.textMuted }} />
                 <input
                   type="text"
                   placeholder="Rechercher par référence, nom..."
                   value={recherche}
                   onChange={(e) => setRecherche(e.target.value)}
-                  style={{ padding: '8px 12px 8px 36px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13, width: 280 }}
+                  style={{ padding: '8px 12px 8px 36px', borderRadius: 8, border: `1px solid ${colors.inputBorder}`, fontSize: 13, width: 280, background: colors.input, color: colors.text }}
                 />
               </div>
             </div>
 
-            {/* LISTE DES DEMANDES */}
             {demandesFiltrees.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 40, background: '#FFFFFF', borderRadius: 12, border: '1px solid #E5E7EB' }}>
-                <FileText size={48} style={{ color: '#D1D5DB', marginBottom: 16 }} />
-                <p style={{ color: '#6B7280', fontSize: 16 }}>Aucune demande trouvée</p>
+              <div style={{ textAlign: 'center', padding: 40, background: colors.card, borderRadius: 12, border: `1px solid ${colors.cardBorder}` }}>
+                <FileText size={48} style={{ color: colors.textMuted, marginBottom: 16 }} />
+                <p style={{ color: colors.textSecondary, fontSize: 16 }}>Aucune demande trouvée</p>
                 <Link to="/nouvelle-demande">
-                  <button style={{ marginTop: 12, padding: '10px 20px', borderRadius: 8, border: 'none', background: '#4F46E5', color: '#FFF', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  <button style={{ marginTop: 12, padding: '10px 20px', borderRadius: 8, border: 'none', background: colors.primary, color: '#FFF', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                     Créer ma première demande
                   </button>
                 </Link>
@@ -336,35 +339,28 @@ export default function MesDemandes() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {demandesFiltrees.map((demande) => {
-                  const statutInfo = STATUTS[demande.statut] || { label: demande.statut, color: '#6B7280', bg: '#F3F4F6' };
+                  const statutInfo = STATUTS[demande.statut] || { label: demande.statut, color: colors.textSecondary, bg: colors.input };
                   const totalDemande = calculerTotalDemande(demande);
                   const actes = demande.demande_actes || demande.demandeActes || [];
                   const nbActes = actes.reduce((sum, d) => sum + (d.quantite || 1), 0);
 
                   return (
-                    <div key={demande.id_demande || demande.id} style={{ background: '#FFFFFF', borderRadius: 12, border: '1px solid #E5E7EB', padding: 16 }}>
+                    <div key={demande.id_demande || demande.id} style={{ background: colors.card, borderRadius: 12, border: `1px solid ${colors.cardBorder}`, padding: 16 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                            <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: colors.text }}>
                               {demande.reference || `DEM-${demande.id_demande}`}
                             </span>
-                            <span style={{
-                              fontSize: 11,
-                              padding: '2px 10px',
-                              borderRadius: 12,
-                              background: statutInfo.bg,
-                              color: statutInfo.color,
-                              fontWeight: 500
-                            }}>
+                            <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 12, background: statutInfo.bg, color: statutInfo.color, fontWeight: 500 }}>
                               {statutInfo.label}
                             </span>
-                            <span style={{ fontSize: 11, color: '#9CA3AF' }}>
+                            <span style={{ fontSize: 11, color: colors.textMuted }}>
                               {new Date(demande.created_at).toLocaleDateString('fr-FR')}
                             </span>
                           </div>
 
-                          <div style={{ display: 'flex', gap: 24, fontSize: 13, color: '#6B7280', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', gap: 24, fontSize: 13, color: colors.textSecondary, flexWrap: 'wrap' }}>
                             <div>
                               <span style={{ fontWeight: 500 }}>Demandeur :</span> {demande.demandeur_prenom} {demande.demandeur_nom}
                             </div>
@@ -376,7 +372,7 @@ export default function MesDemandes() {
                             </div>
                             <div>
                               <span style={{ fontWeight: 500 }}>Total :</span>
-                              <span style={{ color: '#4F46E5', fontWeight: 700 }}>
+                              <span style={{ color: colors.primary, fontWeight: 700 }}>
                                 {new Intl.NumberFormat('fr-FR').format(totalDemande)} Ar
                               </span>
                             </div>
@@ -385,7 +381,7 @@ export default function MesDemandes() {
 
                         <button
                           onClick={() => ouvrirModal(demande)}
-                          style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #E5E7EB', background: '#F9FAFB', color: '#4F46E5', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                          style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${colors.cardBorder}`, background: colors.input, color: colors.primary, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                         >
                           <Eye size={14} /> Détails
                         </button>
@@ -411,18 +407,18 @@ export default function MesDemandes() {
       {/* ===== MODAL DÉTAILS ===== */}
       {modalOuverte && demandeSelectionnee && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#FFFFFF', borderRadius: 16, padding: 32, maxWidth: 800, width: '100%', maxHeight: '80vh', overflow: 'auto' }}>
+          <div style={{ background: colors.card, borderRadius: 16, padding: 32, maxWidth: 800, width: '100%', maxHeight: '80vh', overflow: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827' }}>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: colors.text }}>
                 Détails de la demande
               </h2>
-              <button onClick={fermerModal} style={{ border: 'none', background: 'transparent', color: '#6B7280', cursor: 'pointer' }}>
+              <button onClick={fermerModal} style={{ border: 'none', background: 'transparent', color: colors.textSecondary, cursor: 'pointer' }}>
                 <X size={24} />
               </button>
             </div>
 
-            <div style={{ marginBottom: 24, padding: 16, background: '#F9FAFB', borderRadius: 8 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13 }}>
+            <div style={{ marginBottom: 24, padding: 16, background: colors.input, borderRadius: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13, color: colors.text }}>
                 <div><span style={{ fontWeight: 600 }}>Référence :</span> {demandeSelectionnee.reference}</div>
                 <div><span style={{ fontWeight: 600 }}>Statut :</span> {STATUTS[demandeSelectionnee.statut]?.label || demandeSelectionnee.statut}</div>
                 <div><span style={{ fontWeight: 600 }}>Date :</span> {new Date(demandeSelectionnee.created_at).toLocaleDateString('fr-FR')}</div>
@@ -431,8 +427,8 @@ export default function MesDemandes() {
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: '#111827' }}>Informations demandeur</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 13, padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: colors.text }}>Informations demandeur</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 13, padding: 12, background: colors.input, borderRadius: 8, color: colors.text }}>
                 <div><span style={{ fontWeight: 600 }}>Nom :</span> {demandeSelectionnee.demandeur_nom}</div>
                 <div><span style={{ fontWeight: 600 }}>Prénom :</span> {demandeSelectionnee.demandeur_prenom}</div>
                 <div><span style={{ fontWeight: 600 }}>Adresse :</span> {demandeSelectionnee.demandeur_adresse}</div>
@@ -442,8 +438,8 @@ export default function MesDemandes() {
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: '#111827' }}>Personne concernée</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 13, padding: 12, background: '#F9FAFB', borderRadius: 8 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: colors.text }}>Personne concernée</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 13, padding: 12, background: colors.input, borderRadius: 8, color: colors.text }}>
                 <div><span style={{ fontWeight: 600 }}>Nom :</span> {demandeSelectionnee.personne_nom}</div>
                 <div><span style={{ fontWeight: 600 }}>Prénom :</span> {demandeSelectionnee.personne_prenom}</div>
                 <div><span style={{ fontWeight: 600 }}>Lieu naissance :</span> {demandeSelectionnee.personne_lieu_naissance}</div>
@@ -455,17 +451,13 @@ export default function MesDemandes() {
             </div>
 
             <div>
-              <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: '#111827' }}>Liste des actes demandés</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: colors.text }}>Liste des actes demandés</h3>
               {(demandeSelectionnee.demande_actes || demandeSelectionnee.demandeActes || []).length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {(demandeSelectionnee.demande_actes || demandeSelectionnee.demandeActes).map((item, index) => {
                     let typeActe = typeof item.type_acte === 'string' ? item.type_acte : null;
-                    if (!typeActe) {
-                      typeActe = item.typeActe?.type_acte || null;
-                    }
-                    if (!typeActe && item.typeActe && typeof item.typeActe === 'object') {
-                      typeActe = item.typeActe.type_acte;
-                    }
+                    if (!typeActe) typeActe = item.typeActe?.type_acte || null;
+                    if (!typeActe && item.typeActe && typeof item.typeActe === 'object') typeActe = item.typeActe.type_acte;
 
                     const Icone = ICONES_TYPE[typeActe] || FileText;
                     const nomActe = LABELS_TYPE[typeActe] || item.typeActe?.nom || typeActe;
@@ -482,32 +474,23 @@ export default function MesDemandes() {
                       .filter(Boolean);
 
                     return (
-                      <div key={index} style={{ display: 'flex', flexDirection: 'column', padding: '10px 14px', background: '#FFFFFF', borderRadius: 6, border: '1px solid #E5E7EB' }}>
+                      <div key={index} style={{ display: 'flex', flexDirection: 'column', padding: '10px 14px', background: colors.card, borderRadius: 6, border: `1px solid ${colors.cardBorder}` }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div style={{ width: 32, height: 32, borderRadius: 6, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4F46E5' }}>
+                            <div style={{ width: 32, height: 32, borderRadius: 6, background: colors.primaryLight, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.primary }}>
                               <Icone size={16} />
                             </div>
                             <div>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{nomActe}</div>
-                              <div style={{ fontSize: 11, color: '#6B7280' }}>Quantité: {quantite}</div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{nomActe}</div>
+                              <div style={{ fontSize: 11, color: colors.textSecondary }}>Quantité: {quantite}</div>
                             </div>
                           </div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5' }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: colors.primary }}>
                             {new Intl.NumberFormat('fr-FR').format(prixUnitaire * quantite)} Ar
                           </div>
                         </div>
                         {detailsAffiches.length > 0 && (
-                          <div style={{
-                            marginTop: 6,
-                            paddingTop: 6,
-                            borderTop: '1px dashed #E5E7EB',
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: '4px 12px',
-                            fontSize: 11,
-                            color: '#6B7280'
-                          }}>
+                          <div style={{ marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${colors.cardBorder}`, display: 'flex', flexWrap: 'wrap', gap: '4px 12px', fontSize: 11, color: colors.textSecondary }}>
                             {detailsAffiches.map((detail, i) => (
                               <span key={i}>
                                 <strong>{detail.label}:</strong> {detail.value}
@@ -518,22 +501,22 @@ export default function MesDemandes() {
                       </div>
                     );
                   })}
-                  <div style={{ marginTop: 8, padding: '12px 14px', background: '#F3F4F6', borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>Total</span>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: '#4F46E5' }}>
+                  <div style={{ marginTop: 8, padding: '12px 14px', background: colors.input, borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>Total</span>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: colors.primary }}>
                       {new Intl.NumberFormat('fr-FR').format(calculerTotalDemande(demandeSelectionnee))} Ar
                     </span>
                   </div>
                 </div>
               ) : (
-                <div style={{ padding: 16, textAlign: 'center', color: '#9CA3AF', background: '#F9FAFB', borderRadius: 8 }}>
+                <div style={{ padding: 16, textAlign: 'center', color: colors.textMuted, background: colors.input, borderRadius: 8 }}>
                   Aucun acte associé à cette demande
                 </div>
               )}
             </div>
 
             <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={fermerModal} style={{ padding: '8px 20px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#FFF', color: '#374151', fontSize: 13, cursor: 'pointer' }}>
+              <button onClick={fermerModal} style={{ padding: '8px 20px', borderRadius: 8, border: `1px solid ${colors.cardBorder}`, background: colors.card, color: colors.text, fontSize: 13, cursor: 'pointer' }}>
                 Fermer
               </button>
             </div>
