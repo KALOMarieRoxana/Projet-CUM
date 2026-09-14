@@ -68,6 +68,13 @@ class TypeActe extends Model
         return $this->$field ?? 0;
     }
 
+    public function supplements()
+    {
+        return $this->hasMany(TypeActeSupplement::class, 'type_acte_id')
+            ->where('actif', true)
+            ->orderBy('ordre');
+    }
+
     // ========== ACCESSORS ==========
     
     /**

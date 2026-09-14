@@ -40,12 +40,17 @@ class Demande extends Model
         'date_traitement',
         'commentaire_admin',
         'traite_par',
+        'pdf_path',
+        'pdf_genere_at',
+        'notification_lue',
     ];
 
     protected $casts = [
         'personne_date_naissance' => 'date',
         'nombre_actes' => 'integer',
         'date_traitement' => 'datetime',
+        'pdf_genere_at' => 'datetime',
+        'notification_lue' => 'boolean',
         'prix_total' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -57,6 +62,10 @@ class Demande extends Model
     public function citoyen(): BelongsTo
     {
         return $this->belongsTo(Citoyen::class, 'citoyen_id');
+    }
+    public function traitePar()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'traite_par');
     }
 
     public function traiteur(): BelongsTo

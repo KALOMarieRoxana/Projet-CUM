@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DemandeController;
+use App\Http\Controllers\DemandePdfController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\LoginController;
@@ -12,7 +13,7 @@ use App\Http\Controllers\Auth\RegisterController;
 
 Auth::routes();
 
-// =============================
+// =============================                                                                                                                                                                      
 // ROUTE DASHBOARD (Redirection dynamique)
 // =============================
 Route::middleware(['auth'])->get('/dashboard', function () {
@@ -53,6 +54,9 @@ Route::get('/', function () {
 Route::middleware(['auth'])->group(function () {
     Route::put('/profil', [ProfileController::class, 'update'])->name('profil.update');
     Route::put('/profil/password', [ProfileController::class, 'updatePassword'])->name('profil.password.update');
+
+    Route::get('/demandes/{id}/pdf', [DemandePdfController::class, 'telecharger'])->name('demandes.pdf');
+    Route::get('/demandes/verifier/{reference}', [DemandePdfController::class, 'verifier'])->name('demandes.verifier');
 });
 
 // =============================
@@ -87,6 +91,11 @@ Route::middleware(['auth', 'role:admin'])
             DemandeController::class,
             'update'
         ])->name('demandes.update');
+        // ✅ NOUVELLES ROUTES
+        Route::post('/demandes/{id}/traiter', [DemandeController::class, 'traiter'])->name('demandes.traiter');
+        Route::post('/demandes/items/{id}/traiter', [DemandeController::class, 'traiterItem'])->name('demandes.traiter-item');
+        Route::get('/demandes/details/{type}/{id}', [DemandeController::class, 'detailsActe'])->name('demandes.details');
+
     });
 
 // =============================
@@ -116,6 +125,12 @@ Route::middleware(['auth', 'role:super_admin'])
             DemandeController::class,
             'update'
         ])->name('demandes.update');
+
+        // ✅ NOUVELLES ROUTES
+        Route::post('/demandes/{id}/traiter', [DemandeController::class, 'traiter'])->name('demandes.traiter');
+        Route::post('/demandes/items/{id}/traiter', [DemandeController::class, 'traiterItem'])->name('demandes.traiter-item');
+        Route::post('/demandes/{id}/archiver', [DemandeController::class, 'archiver'])->name('demandes.archiver');
+        Route::get('/demandes/export', [DemandeController::class, 'export'])->name('demandes.export');
 
         // Gestion des administrateurs
         Route::get('/admins', [

@@ -3,14 +3,17 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
 import ThemeSwitcher from '../components/ThemeSwitcher';
+import NotificationBell from '../components/NotificationBell';
 import api from '../api/axiosConfig';
 import {
   FileText, Clock, CheckCircle, XCircle, LogOut, Plus,
   Phone, MapPin, Mail, Bell, ChevronRight,
   Zap, Shield, AlertCircle, Home, ChevronDown,
-  UserCircle, Award, Key, X, Eye, EyeOff
+  UserCircle, Award, Key, X, Eye, EyeOff, Download
 } from 'lucide-react';
 import logo from '../assets/image/logo.png';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
 
 export default function Dashboard() {
   const { utilisateur, deconnecter } = useAuth();
@@ -186,6 +189,9 @@ export default function Dashboard() {
   const demandesAcceptees = mesDemandes.filter(d => d.statut === 'acceptée').length;
   const demandesEnAttente = mesDemandes.filter(d => d.statut === 'en attente').length;
   const demandesRefusees = mesDemandes.filter(d => d.statut === 'refusée').length;
+  const notifications = mesDemandes.filter(d => 
+  d.statut === 'acceptée' && d.pdf_path && !d.notification_lue
+  );
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: 'Inter, sans-serif' }}>
@@ -244,10 +250,7 @@ export default function Dashboard() {
             </h1>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button style={{ width: 38, height: 38, borderRadius: 10, border: `1px solid ${colors.cardBorder}`, background: colors.card, color: colors.textSecondary, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Bell size={16} />
-            </button>
-
+            <NotificationBell />
             <ThemeSwitcher />
 
             <Link to="/nouvelle-demande" style={{ textDecoration: 'none' }}>
@@ -310,6 +313,23 @@ export default function Dashboard() {
         {erreur && (
           <div style={{ padding: '12px 16px', borderRadius: 10, background: '#FEE2E2', border: '1px solid #DC2626', color: '#991B1B', fontSize: 13, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
             <AlertCircle size={15} /> {erreur}
+          </div>
+        )}
+
+        {/* ✅ NOTIFICATION DES DEMANDES ACCEPTÉES */}
+        {notifications.length > 0 && (
+          <div style={{ background: '#D1FAE5', border: '1px solid #10B981', borderRadius: 12, padding: 16, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Bell size={18} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#065F46' }}>
+                🎉 {notifications.length} demande(s) acceptée(s) !
+              </div>
+              <div style={{ fontSize: 12, color: '#047857' }}>
+                Vos documents PDF sont prêts à être téléchargés.
+              </div>
+            </div>
           </div>
         )}
 
@@ -423,6 +443,30 @@ export default function Dashboard() {
                         )}
                       </div>
                     </div>
+                    
+                    {/* ✅ BOUTON PDF (AJOUTER ICI, avant le span du statut) */}
+                    {d.statut === 'acceptée' && d.pdf_path && (
+                      <a
+                        href={`${API_URL}/demandes/${d.id_demande}/pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 6,
+                          background: '#10B981',
+                          color: '#fff',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          marginLeft: 8
+                        }}
+                      >
+                        <Download size={14} /> PDF
+                      </a>
+                    )}
 
                     {/* Statut à droite */}
                     <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, background: config.bg, color: config.texte, fontWeight: 600, border: `1px solid ${config.border}33`, flexShrink: 0 }}>

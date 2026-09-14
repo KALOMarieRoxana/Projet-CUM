@@ -26,7 +26,7 @@
         <div class="stat-card">
             <div class="stat-icon" style="background:#eef2ff;color:#4f46e5;"><i class="bi bi-ticket-perforated"></i></div>
             <div>
-                <h3>{{ $statistiques['total'] }}</h3>
+                <h3>{{ $statistiques['total'] ?? 0 }}</h3>
                 <p>Total des demandes</p>
             </div>
         </div>
@@ -35,7 +35,7 @@
         <div class="stat-card">
             <div class="stat-icon" style="background:#fff7ed;color:#ea580c;"><i class="bi bi-hourglass-split"></i></div>
             <div>
-                <h3>{{ $statistiques['en_attente'] }}</h3>
+                <h3>{{ $statistiques['en_attente'] ?? 0 }}</h3>
                 <p>En attente</p>
             </div>
         </div>
@@ -44,7 +44,7 @@
         <div class="stat-card">
             <div class="stat-icon" style="background:#ecfdf5;color:#059669;"><i class="bi bi-check-circle"></i></div>
             <div>
-                <h3>{{ $statistiques['acceptee'] }}</h3>
+                <h3>{{ $statistiques['acceptee'] ?? $statistiques['acceptée'] ?? 0 }}</h3>
                 <p>Acceptées</p>
             </div>
         </div>
@@ -53,7 +53,7 @@
         <div class="stat-card">
             <div class="stat-icon" style="background:#fef2f2;color:#dc2626;"><i class="bi bi-x-circle"></i></div>
             <div>
-                <h3>{{ $statistiques['refusee'] }}</h3>
+                <h3>{{ $statistiques['refusee'] ?? $statistiques['refusée'] ?? 0 }}</h3>
                 <p>Refusées</p>
             </div>
         </div>
@@ -114,16 +114,15 @@
     </div>
 </div>
 
-<!-- Tableau des demandes -->
+<!-- Tableau -->
 <div class="content-card">
     <div class="d-flex justify-content-between align-items-center p-3 border-bottom flex-wrap gap-2">
         <div>
             <h5 class="mb-0">Liste complète des demandes</h5>
-            <small class="text-muted">{{ $demandes->count() }} demande(s) au total</small>
+            <small class="text-muted">{{ isset($demandes) ? $demandes->total() : 0 }} demande(s) au total</small>
         </div>
 
         <div class="d-flex gap-2 align-items-center flex-wrap">
-            <!-- Filtres rapides -->
             <div class="btn-group" role="group">
                 <button type="button" class="btn btn-outline-secondary btn-sm filter-btn active" data-filter="tous">Tous</button>
                 <button type="button" class="btn btn-outline-warning btn-sm filter-btn" data-filter="en attente">En attente</button>
@@ -132,7 +131,6 @@
                 <button type="button" class="btn btn-outline-info btn-sm filter-btn" data-filter="partiellement_traitée">Partielles</button>
             </div>
 
-            <!-- Boutons d'export -->
             <a href="{{ route('super-admin.demandes.export') }}" class="btn btn-success btn-sm">
                 <i class="bi bi-download"></i> Export
             </a>
@@ -162,9 +160,13 @@
             </thead>
             <tbody>
                 @forelse ($demandes as $demande)
+                    @php
+                        $items = $demande->demandeActes ?? $demande->items ?? collect();
+                        $nbActes = $items->sum('quantite');
+                    @endphp
                     <tr data-statut="{{ $demande->statut }}">
                         <td class="ps-3">
-                            <strong>{{ $demande->numero_reference }}</strong>
+                            <strong>{{ $demande->reference ?? $demande->numero_reference }}</strong>
                             <br>
                             <small class="text-muted">#{{ $demande->id_demande }}</small>
                         </td>
@@ -177,14 +179,14 @@
                             <small class="text-muted">{{ $demande->demandeur_contact }}</small>
                         </td>
                         <td>
-                            @foreach($demande->items as $item)
-                                <span class="badge bg-info">
-                                    {{ $item->typeActe->nom ?? 'Inconnu' }}
+                            @foreach($items as $item)
+                                <span class="badge bg-info mb-1">
+                                    {{ $item->typeActe->nom ?? $item->type_acte ?? 'Acte' }}
                                     <span class="badge bg-light text-dark">x{{ $item->quantite }}</span>
                                 </span>
                                 <br>
                             @endforeach
-                            <small class="text-muted">{{ $demande->items->count() }} acte(s)</small>
+                            <small class="text-muted">{{ $nbActes }} acte(s)</small>
                         </td>
                         <td>
                             @if($demande->service == 'express')
@@ -194,14 +196,14 @@
                             @endif
                         </td>
                         <td>
-                            <strong>{{ number_format($demande->prix_total, 0, ',', ' ') }} FCFA</strong>
+                            <strong>{{ number_format($demande->prix_total ?? 0, 0, ',', ' ') }} Ar</strong>
                         </td>
                         <td>
                             @if ($demande->statut === 'en attente')
                                 <span class="badge bg-warning">⏳ En attente</span>
-                            @elseif ($demande->statut === 'acceptée')
+                            @elseif (in_array($demande->statut, ['acceptée', 'acceptee']))
                                 <span class="badge bg-success">✅ Acceptée</span>
-                            @elseif ($demande->statut === 'refusée')
+                            @elseif (in_array($demande->statut, ['refusée', 'refusee']))
                                 <span class="badge bg-danger">❌ Refusée</span>
                             @elseif ($demande->statut === 'partiellement_traitée')
                                 <span class="badge bg-info">🔄 Partielle</span>
@@ -216,21 +218,18 @@
                                 <span class="text-muted">Non traité</span>
                             @endif
                         </td>
-                        <td>{{ $demande->created_at->format('d/m/Y H:i') }}</td>
+                        <td>{{ $demande->created_at ? $demande->created_at->format('d/m/Y H:i') : '-' }}</td>
                         <td class="text-end pe-3">
-                            <!-- Détails -->
                             <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#detailsModal{{ $demande->id_demande }}">
                                 <i class="bi bi-eye"></i>
                             </button>
 
-                            <!-- Traiter -->
                             @if($demande->statut == 'en attente' || $demande->statut == 'partiellement_traitée')
                                 <a href="{{ route('super-admin.demandes.traiter', $demande->id_demande) }}" class="btn btn-success btn-sm">
                                     <i class="bi bi-check2-circle"></i>
                                 </a>
                             @endif
 
-                            <!-- Archiver -->
                             @if($demande->statut != 'en attente')
                                 <form action="{{ route('super-admin.demandes.archiver', $demande->id_demande) }}" method="POST" class="d-inline">
                                     @csrf
@@ -253,7 +252,6 @@
         </table>
     </div>
 
-    <!-- Pagination -->
     @if(isset($demandes) && method_exists($demandes, 'links'))
         <div class="p-3 border-top">
             {{ $demandes->links() }}
@@ -262,22 +260,24 @@
 </div>
 
 <!-- ========================================================== -->
-<!-- MODALS POUR LES DÉTAILS                                      -->
+<!-- MODALS DÉTAILS                                              -->
 <!-- ========================================================== -->
 @foreach($demandes as $demande)
+@php
+    $items = $demande->demandeActes ?? $demande->items ?? collect();
+@endphp
 <div class="modal fade" id="detailsModal{{ $demande->id_demande }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    📌 Demande #{{ $demande->numero_reference }}
-                    <span class="badge bg-secondary ms-2">{{ $demande->items->count() }} acte(s)</span>
+                    📌 Demande #{{ $demande->reference ?? $demande->numero_reference }}
+                    <span class="badge bg-secondary ms-2">{{ $items->count() }} acte(s)</span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
 
-                <!-- Informations générales -->
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <h6><i class="bi bi-person"></i> Demandeur</h6>
@@ -292,22 +292,22 @@
                     <div class="col-md-6">
                         <h6><i class="bi bi-info-circle"></i> Informations</h6>
                         <table class="table table-sm table-borderless">
-                            <tr><td width="120"><strong>Référence:</strong></td><td>{{ $demande->numero_reference }}</td></tr>
+                            <tr><td width="120"><strong>Référence:</strong></td><td>{{ $demande->reference ?? $demande->numero_reference }}</td></tr>
                             <tr><td><strong>Citoyen:</strong></td><td>{{ $demande->citoyen->prenom ?? '' }} {{ $demande->citoyen->nom ?? '' }}</td></tr>
                             <tr><td><strong>Service:</strong></td><td>{{ ucfirst($demande->service) }}</td></tr>
-                            <tr><td><strong>Prix total:</strong></td><td><strong>{{ number_format($demande->prix_total, 0, ',', ' ') }} FCFA</strong></td></tr>
+                            <tr><td><strong>Prix total:</strong></td><td><strong>{{ number_format($demande->prix_total ?? 0, 0, ',', ' ') }} Ar</strong></td></tr>
                             <tr><td><strong>Statut:</strong></td><td>
                                 @if($demande->statut == 'en attente')
                                     <span class="badge bg-warning">⏳ En attente</span>
-                                @elseif($demande->statut == 'acceptée')
+                                @elseif(in_array($demande->statut, ['acceptée', 'acceptee']))
                                     <span class="badge bg-success">✅ Acceptée</span>
-                                @elseif($demande->statut == 'refusée')
+                                @elseif(in_array($demande->statut, ['refusée', 'refusee']))
                                     <span class="badge bg-danger">❌ Refusée</span>
                                 @elseif($demande->statut == 'partiellement_traitée')
                                     <span class="badge bg-info">🔄 Partiellement traitée</span>
                                 @endif
                             </td></tr>
-                            <tr><td><strong>Date:</strong></td><td>{{ $demande->created_at->format('d/m/Y H:i') }}</td></tr>
+                            <tr><td><strong>Date:</strong></td><td>{{ $demande->created_at ? $demande->created_at->format('d/m/Y H:i') : '-' }}</td></tr>
                             @if($demande->traitePar)
                                 <tr><td><strong>Traité par:</strong></td><td>{{ $demande->traitePar->name ?? '' }}</td></tr>
                                 <tr><td><strong>Date traitement:</strong></td><td>{{ $demande->date_traitement ? $demande->date_traitement->format('d/m/Y H:i') : '' }}</td></tr>
@@ -318,23 +318,28 @@
 
                 <hr>
 
-                <!-- Détails des actes -->
                 <h6 class="mb-3"><i class="bi bi-list-ul"></i> Actes demandés</h6>
-                @foreach($demande->items as $index => $item)
-                    <div class="card mb-3 {{ $item->statut == 'acceptée' ? 'border-success' : ($item->statut == 'refusée' ? 'border-danger' : 'border-warning') }}">
+                @foreach($items as $index => $item)
+                    @php
+                        $typeNom = $item->typeActe->nom ?? $item->type_acte ?? 'Acte';
+                        $typeSlug = strtolower($item->typeActe->type_acte ?? $item->type_acte ?? '');
+                        $details = is_string($item->details) ? json_decode($item->details) : (object)($item->details ?? []);
+                    @endphp
+                    <div class="card mb-3 {{ in_array($item->statut, ['acceptée', 'acceptee']) ? 'border-success' : (in_array($item->statut, ['refusée', 'refusee']) ? 'border-danger' : 'border-warning') }}">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h6 class="card-title mb-0">
-                                    {{ $index + 1 }}. {{ $item->typeActe->nom ?? 'Inconnu' }}
+                                    {{ $index + 1 }}. {{ $typeNom }}
                                     <span class="badge bg-secondary">x{{ $item->quantite }}</span>
-                                    <span class="badge bg-info">{{ number_format($item->prix_total, 0, ',', ' ') }} FCFA</span>
+                                    <span class="badge bg-info">{{ number_format($item->sous_total ?? ($item->prix_unitaire * $item->quantite), 0, ',', ' ') }} Ar</span>
+                                    <span class="badge bg-dark">{{ strtoupper($item->langue ?? 'MG') }}</span>
                                 </h6>
                                 <div>
                                     @if($item->statut == 'en attente')
                                         <span class="badge bg-warning">⏳ En attente</span>
-                                    @elseif($item->statut == 'acceptée')
+                                    @elseif(in_array($item->statut, ['acceptée', 'acceptee']))
                                         <span class="badge bg-success">✅ Acceptée</span>
-                                    @elseif($item->statut == 'refusée')
+                                    @elseif(in_array($item->statut, ['refusée', 'refusee']))
                                         <span class="badge bg-danger">❌ Refusée</span>
                                     @endif
                                     @if($item->traitePar)
@@ -343,70 +348,62 @@
                                 </div>
                             </div>
 
-                            <!-- Détails spécifiques selon le type -->
-                            @php
-                                $details = $item->details;
-                            @endphp
-
                             <div class="mt-2" style="font-size: 0.9rem;">
-                                @if($item->typeActe->nom == 'naissance' && $details)
+                                @if($typeSlug === 'naissance' && $details)
                                     <div class="row">
                                         <div class="col-md-6">
                                             <strong>Personne:</strong> {{ $details->personne_prenom ?? '' }} {{ $details->personne_nom ?? '' }}
                                             ({{ $details->personne_sexe ?? '' }})<br>
-                                            <strong>Né(e) le:</strong> {{ $details->personne_date_naissance ? \Carbon\Carbon::parse($details->personne_date_naissance)->format('d/m/Y') : '' }}
+                                            <strong>Né(e) le:</strong> {{ $details->personne_date_naissance ?? '' }}
                                             à {{ $details->personne_lieu_naissance ?? '' }}
                                         </div>
                                         <div class="col-md-6">
                                             <strong>Père:</strong> {{ $details->pere_prenom ?? '' }} {{ $details->pere_nom ?? '' }}<br>
                                             <strong>Mère:</strong> {{ $details->mere_prenom ?? '' }} {{ $details->mere_nom ?? '' }}
-                                            @if($details->personne_numero_acte)
+                                            @if(!empty($details->personne_numero_acte))
                                                 <br><strong>Numéro acte:</strong> {{ $details->personne_numero_acte }}
                                             @endif
                                         </div>
                                     </div>
-
-                                @elseif($item->typeActe->nom == 'mariage' && $details)
+                                @elseif($typeSlug === 'mariage' && $details)
                                     <div class="row">
                                         <div class="col-md-6">
                                             <strong>Époux:</strong> {{ $details->epoux_prenom ?? '' }} {{ $details->epoux_nom ?? '' }}<br>
-                                            <strong>Né le:</strong> {{ $details->epoux_date_naissance ? \Carbon\Carbon::parse($details->epoux_date_naissance)->format('d/m/Y') : '' }}
+                                            <strong>Né le:</strong> {{ $details->epoux_date_naissance ?? '' }}
                                             à {{ $details->epoux_lieu_naissance ?? '' }}
                                         </div>
                                         <div class="col-md-6">
                                             <strong>Épouse:</strong> {{ $details->epouse_prenom ?? '' }} {{ $details->epouse_nom ?? '' }}<br>
-                                            <strong>Née le:</strong> {{ $details->epouse_date_naissance ? \Carbon\Carbon::parse($details->epouse_date_naissance)->format('d/m/Y') : '' }}
+                                            <strong>Née le:</strong> {{ $details->epouse_date_naissance ?? '' }}
                                             à {{ $details->epouse_lieu_naissance ?? '' }}
                                         </div>
                                         <div class="col-md-12 mt-1">
-                                            <strong>Mariage:</strong> {{ $details->date_mariage ? \Carbon\Carbon::parse($details->date_mariage)->format('d/m/Y') : '' }}
+                                            <strong>Mariage:</strong> {{ $details->date_mariage ?? '' }}
                                             à {{ $details->lieu_mariage ?? '' }}
                                         </div>
                                     </div>
-
-                                @elseif($item->typeActe->nom == 'décès' && $details)
+                                @elseif($typeSlug === 'deces' && $details)
                                     <div class="row">
                                         <div class="col-md-6">
                                             <strong>Défunt:</strong> {{ $details->defunt_prenom ?? '' }} {{ $details->defunt_nom ?? '' }}<br>
-                                            <strong>Né le:</strong> {{ $details->defunt_date_naissance ? \Carbon\Carbon::parse($details->defunt_date_naissance)->format('d/m/Y') : '' }}
+                                            <strong>Né le:</strong> {{ $details->defunt_date_naissance ?? '' }}
                                             à {{ $details->defunt_lieu_naissance ?? '' }}
                                         </div>
                                         <div class="col-md-6">
-                                            <strong>Décès:</strong> {{ $details->date_deces ? \Carbon\Carbon::parse($details->date_deces)->format('d/m/Y') : '' }}
+                                            <strong>Décès:</strong> {{ $details->date_deces ?? '' }}
                                             à {{ $details->lieu_deces ?? '' }}<br>
                                             <strong>Cause:</strong> {{ $details->cause_deces ?? 'Non spécifiée' }}
                                         </div>
                                     </div>
-
-                                @elseif($item->typeActe->nom == 'divorce' && $details)
+                                @elseif($typeSlug === 'divorces' && $details)
                                     <div class="row">
                                         <div class="col-md-6">
                                             <strong>Conjoint:</strong> {{ $details->conjoint_prenom ?? '' }} {{ $details->conjoint_nom ?? '' }}<br>
                                             <strong>Conjointe:</strong> {{ $details->conjointe_prenom ?? '' }} {{ $details->conjointe_nom ?? '' }}
                                         </div>
                                         <div class="col-md-6">
-                                            <strong>Mariage:</strong> {{ $details->date_mariage ? \Carbon\Carbon::parse($details->date_mariage)->format('d/m/Y') : '' }}<br>
-                                            <strong>Demande:</strong> {{ $details->date_demande_divorce ? \Carbon\Carbon::parse($details->date_demande_divorce)->format('d/m/Y') : '' }}<br>
+                                            <strong>Mariage:</strong> {{ $details->date_mariage ?? '' }}<br>
+                                            <strong>Demande:</strong> {{ $details->date_demande_divorce ?? '' }}<br>
                                             <strong>Motif:</strong> {{ $details->motif ?? 'Non spécifié' }}
                                         </div>
                                     </div>
@@ -415,7 +412,6 @@
                                 @endif
                             </div>
 
-                            <!-- Actions sur l'item (Super Admin) -->
                             @if($item->statut == 'en attente')
                                 <div class="mt-2">
                                     <form action="{{ route('super-admin.demandes.traiter-item', $item->id) }}" method="POST" class="d-inline">
@@ -438,16 +434,15 @@
                     </div>
                 @endforeach
 
-                <!-- Résumé des statuts -->
                 <div class="row mt-3">
                     <div class="col-md-12">
                         <div class="alert alert-secondary">
                             <strong>Résumé :</strong>
                             @php
-                                $totalItems = $demande->items->count();
-                                $acceptes = $demande->items->where('statut', 'acceptée')->count();
-                                $refuses = $demande->items->where('statut', 'refusée')->count();
-                                $enAttente = $demande->items->where('statut', 'en attente')->count();
+                                $totalItems = $items->count();
+                                $acceptes = $items->filter(fn($i) => in_array($i->statut, ['acceptée', 'acceptee']))->count();
+                                $refuses = $items->filter(fn($i) => in_array($i->statut, ['refusée', 'refusee']))->count();
+                                $enAttente = $items->where('statut', 'en attente')->count();
                             @endphp
                             <span class="badge bg-secondary">{{ $totalItems }} total</span>
                             <span class="badge bg-success">{{ $acceptes }} acceptés</span>
@@ -500,7 +495,6 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Graphique
     const ctx = document.getElementById('demandesChart');
     if (ctx) {
         new Chart(ctx, {
@@ -517,24 +511,15 @@
             },
             options: {
                 responsive: true,
-                plugins: {
-                    legend: { display: false }
-                },
+                plugins: { legend: { display: false } },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1 },
-                        grid: { color: '#f5f7f8' }
-                    },
-                    x: {
-                        grid: { display: false }
-                    }
+                    y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f5f7f8' } },
+                    x: { grid: { display: false } }
                 }
             }
         });
     }
 
-    // Recherche et filtres
     const searchInput = document.getElementById('searchInput');
     const filterBtns = document.querySelectorAll('.filter-btn');
     const rows = document.querySelectorAll('#demandesTable tbody tr[data-statut]');
@@ -555,10 +540,8 @@
 
     filterBtns.forEach(btn => {
         btn.addEventListener('click', function () {
-            filterBtns.forEach(b => b.classList.remove('active', 'btn-outline-secondary', 'btn-outline-warning', 'btn-outline-success', 'btn-outline-danger', 'btn-outline-info'));
+            filterBtns.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            this.classList.remove('btn-outline-secondary', 'btn-outline-warning', 'btn-outline-success', 'btn-outline-danger', 'btn-outline-info');
-            this.classList.add('btn-' + this.dataset.filter === 'tous' ? 'secondary' : 'primary');
             currentFilter = this.dataset.filter;
             applyFilters();
         });

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axiosConfig';
@@ -61,7 +61,7 @@ const CHAMPS_SPECIFIQUES = {
     { name: 'defunt_lieu_naissance', label: 'Lieu naissance défunt', type: 'text', required: true, placeholder: 'Ex: Mahajanga' },
     { name: 'defunt_date_naissance', label: 'Date naissance défunt', type: 'date', required: true },
     { name: 'date_deces', label: 'Date du décès', type: 'date', required: true },
-    { name: 'lieu_deces', label: 'Lieu du décès', type: 'text', required: true, placeholder: 'Ex: CHU Joseph Ravoahangy Andrianavalona' },
+    { name: 'lieu_deces', label: 'Lieu du décès', type: 'text', required: true, placeholder: 'Ex: CHU Antananarivo' },
     { name: 'cause_deces', label: 'Cause du décès', type: 'text', required: false },
   ],
   divorces: [
@@ -112,15 +112,24 @@ export default function NouvelleDemande() {
 
   const [detailsActe, setDetailsActe] = useState({});
 
+  // ✅ State avec quantités séparées
   const [selectionActe, setSelectionActe] = useState({
     type_acte: 'naissance',
     langue: 'mg',
     quantite: 1,
+    supplement_id: null,
+    quantite_supplement: 1,
   });
 
   const [actesAjoutes, setActesAjoutes] = useState([]);
 
   const estMoiMeme = form.demandeur_relation === 'moi_meme';
+
+  // ✅ Suppléments disponibles
+  const supplementsDisponibles = useMemo(() => {
+    const typeObj = typesActes.find(t => t.type_acte === selectionActe.type_acte);
+    return typeObj?.supplements || [];
+  }, [typesActes, selectionActe.type_acte]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -205,24 +214,51 @@ export default function NouvelleDemande() {
     setDetailsActe(prev => ({ ...prev, [name]: value }));
   };
 
+  // ✅ Gestion du changement
   const handleSelectionActeChange = (e) => {
     const { name, value } = e.target;
-    setSelectionActe(prev => ({
-      ...prev,
-      [name]: name === 'quantite' ? Math.max(1, parseInt(value, 10) || 1) : value,
-    }));
+
+    setSelectionActe(prev => {
+      if (name === 'type_acte') {
+        return { ...prev, type_acte: value, supplement_id: null, quantite_supplement: 1 };
+      }
+      if (name === 'quantite') {
+        return { ...prev, quantite: Math.max(1, parseInt(value, 10) || 1) };
+      }
+      if (name === 'quantite_supplement') {
+        return { ...prev, quantite_supplement: Math.max(1, parseInt(value, 10) || 1) };
+      }
+      if (name === 'supplement_id') {
+        return { ...prev, supplement_id: value ? parseInt(value) : null };
+      }
+      return { ...prev, [name]: value };
+    });
   };
 
-  // Calcul du prix en fonction de la table BDD
-  const calculerPrixUnitaire = (typeKey, langue, modeService) => {
-    console.log('🔍 calculerPrixUnitaire appelé avec :', { typeKey, langue, modeService });
+  // ✅ Prix unitaire de l'acte
+  const getPrixActe = (typeKey, langue, modeService) => {
     const typeObj = typesActes.find(t => t.type_acte === typeKey);
-    console.log('📦 typeObj trouvé :', typeObj);
     if (!typeObj) return 0;
-
     const champ = `montant${modeService.charAt(0).toUpperCase() + modeService.slice(1)}${langue.toUpperCase()}`;
-    console.log('🏷️ champ construit :', champ, 'valeur brute :', typeObj[champ]);
     return parseFloat(typeObj[champ]) || 0;
+  };
+
+  // ✅ Prix unitaire du supplément
+  const getPrixSupplement = (typeKey, supplementId, langue, modeService) => {
+    if (!supplementId) return 0;
+    const typeObj = typesActes.find(t => t.type_acte === typeKey);
+    if (!typeObj?.supplements) return 0;
+    const supp = typeObj.supplements.find(s => s.id === supplementId);
+    if (!supp) return 0;
+    const champ = `prix_${modeService}_${langue}`;
+    return parseFloat(supp[champ]) || 0;
+  };
+
+  // ✅ Nom du supplément
+  const getNomSupplement = (typeKey, supplementId) => {
+    if (!supplementId) return null;
+    const typeObj = typesActes.find(t => t.type_acte === typeKey);
+    return typeObj?.supplements?.find(s => s.id === supplementId)?.nom || null;
   };
 
   const ajouterActe = () => {
@@ -235,19 +271,23 @@ export default function NouvelleDemande() {
       return;
     }
 
-    // LOG DE DÉBOGAGE
-    console.log('📝 Détails de l\'acte à ajouter:', {
-      type: selectionActe.type_acte,
-      details: detailsActe
-    });
+    if (supplementsDisponibles.length > 0 && !selectionActe.supplement_id) {
+      setErreur('Veuillez sélectionner un type de document.');
+      return;
+    }
 
     setActesAjoutes(prev => {
       const indexExistant = prev.findIndex(
-        a => a.type_acte === selectionActe.type_acte && a.langue === selectionActe.langue
+        a => a.type_acte === selectionActe.type_acte
+          && a.langue === selectionActe.langue
+          && a.supplement_id === selectionActe.supplement_id
       );
       if (indexExistant > -1) {
         const copy = [...prev];
         copy[indexExistant].quantite += selectionActe.quantite;
+        if (selectionActe.supplement_id) {
+          copy[indexExistant].quantite_supplement += selectionActe.quantite_supplement;
+        }
         return copy;
       }
       return [...prev, { ...selectionActe, details: { ...detailsActe } }];
@@ -271,11 +311,21 @@ export default function NouvelleDemande() {
     setActesAjoutes(prev => prev.map((item, i) => i === index ? { ...item, quantite: q } : item));
   };
 
-  const totalActes = actesAjoutes.reduce((sum, a) => sum + a.quantite, 0);
+  const modifierQuantiteSupp = (index, quantite) => {
+    const q = Math.max(1, parseInt(quantite, 10) || 1);
+    setActesAjoutes(prev => prev.map((item, i) => i === index ? { ...item, quantite_supplement: q } : item));
+  };
+
+  // ✅ Prix total
   const prixTotal = actesAjoutes.reduce((sum, a) => {
-    const prix = calculerPrixUnitaire(a.type_acte, a.langue, form.service);
-    return sum + (prix * a.quantite);
+    const prixActe = getPrixActe(a.type_acte, a.langue, form.service);
+    const prixSupp = getPrixSupplement(a.type_acte, a.supplement_id, a.langue, form.service);
+    const sousTotalActe = prixActe * a.quantite;
+    const sousTotalSupp = a.supplement_id ? prixSupp * a.quantite_supplement : 0;
+    return sum + sousTotalActe + sousTotalSupp;
   }, 0);
+
+  const totalActes = actesAjoutes.reduce((sum, a) => sum + a.quantite, 0);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -312,23 +362,31 @@ export default function NouvelleDemande() {
       personne_numero_acte: form.personne_numero_acte,
       personne_lieu_naissance: form.personne_lieu_naissance,
       personne_date_naissance: form.personne_date_naissance,
-      demandes: actesAjoutes.map(acte => ({
-        type_acte_id: typesActes.find(t => t.type_acte === acte.type_acte)?.id,
-        langue: acte.langue,
-        quantite: acte.quantite,
-        prix_unitaire: calculerPrixUnitaire(acte.type_acte, acte.langue, form.service),
-        // Envoyer les details complets
-        details: {
-          ...acte.details,
-          //Ajouter les informations de la personne concernée
-          personne_nom: form.personne_nom,
-          personne_prenom: form.personne_prenom,
-          personne_lieu_naissance: form.personne_lieu_naissance,
-          personne_date_naissance: form.personne_date_naissance,
-          // Ajouter le type d'acte pour référence
-          type_acte: acte.type_acte
-        }
-      }))
+      demandes: actesAjoutes.map(acte => {
+        const prixActe = getPrixActe(acte.type_acte, acte.langue, form.service);
+        const prixSupp = getPrixSupplement(acte.type_acte, acte.supplement_id, acte.langue, form.service);
+        const quantiteSupp = acte.supplement_id ? acte.quantite_supplement : 0;
+        const totalUnitaire = (prixActe * acte.quantite) + (prixSupp * quantiteSupp);
+
+        return {
+          type_acte_id: typesActes.find(t => t.type_acte === acte.type_acte)?.id,
+          supplement_id: acte.supplement_id,
+          langue: acte.langue,
+          quantite: acte.quantite,
+          quantite_supplement: quantiteSupp,
+          prix_acte: prixActe,
+          prix_supplement: prixSupp,
+          prix_unitaire: totalUnitaire,
+          details: {
+            ...acte.details,
+            personne_nom: form.personne_nom,
+            personne_prenom: form.personne_prenom,
+            personne_lieu_naissance: form.personne_lieu_naissance,
+            personne_date_naissance: form.personne_date_naissance,
+            type_acte: acte.type_acte
+          }
+        };
+      })
     };
 
     try {
@@ -361,8 +419,11 @@ export default function NouvelleDemande() {
   }
 
   const champsSpecifiques = CHAMPS_SPECIFIQUES[selectionActe.type_acte] || [];
-  const prixApercu = calculerPrixUnitaire(selectionActe.type_acte, selectionActe.langue, form.service);
-  console.log('💰 prixApercu calculé :', prixApercu);
+  const prixActeApercu = getPrixActe(selectionActe.type_acte, selectionActe.langue, form.service);
+  const prixSuppApercu = getPrixSupplement(selectionActe.type_acte, selectionActe.supplement_id, selectionActe.langue, form.service);
+  const sousTotalActe = prixActeApercu * selectionActe.quantite;
+  const sousTotalSupp = selectionActe.supplement_id ? prixSuppApercu * selectionActe.quantite_supplement : 0;
+  const prixTotalApercu = sousTotalActe + sousTotalSupp;
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F3F4F6', color: '#1F2937', fontFamily: 'Inter, sans-serif' }}>
@@ -498,40 +559,151 @@ export default function NouvelleDemande() {
             </div>
           </div>
 
-          {/* Ajout d'acte */}
+          {/* ═══════════════════════════════════════════════════════ */}
+          {/* SÉLECTION DES ACTES                                    */}
+          {/* ═══════════════════════════════════════════════════════ */}
           <div style={{ marginBottom: 24, paddingTop: 20, borderTop: '1px solid #E5E7EB' }}>
             <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
               <ShoppingCart size={18} color="#4F46E5" /> Sélection des actes
             </h3>
 
             <div style={{ background: '#F9FAFB', padding: 20, borderRadius: 12, border: '1px solid #E5E7EB', marginBottom: 20 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 4 }}>Type d'acte</label>
-                  <select name="type_acte" value={selectionActe.type_acte} onChange={handleSelectionActeChange} style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13 }}>
-                    {Object.entries(LABELS_TYPE).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
-                  </select>
+
+              {/* ═══════════ SECTION 1 : TYPE D'ACTE ═══════════ */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <FileText size={16} /> TYPE D'ACTE
                 </div>
 
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 4 }}>Langue</label>
-                  <select name="langue" value={selectionActe.langue} onChange={handleSelectionActeChange} style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13 }}>
-                    {OPTIONS_LANGUE.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                  </select>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 4 }}>Acte</label>
+                    <select name="type_acte" value={selectionActe.type_acte} onChange={handleSelectionActeChange} style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13 }}>
+                      {Object.entries(LABELS_TYPE).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 4 }}>Langue</label>
+                    <select name="langue" value={selectionActe.langue} onChange={handleSelectionActeChange} style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13 }}>
+                      {OPTIONS_LANGUE.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
+                  </div>
                 </div>
 
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 4 }}>Quantité</label>
-                  <input type="number" name="quantite" min="1" value={selectionActe.quantite} onChange={handleSelectionActeChange} style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13 }} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, background: '#FFF', padding: 12, borderRadius: 8, border: '1px solid #E5E7EB' }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>Prix unitaire</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>
+                      {new Intl.NumberFormat('fr-FR').format(prixActeApercu)} Ar
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>Quantité</div>
+                    <input
+                      type="number"
+                      name="quantite"
+                      min="1"
+                      value={selectionActe.quantite}
+                      onChange={handleSelectionActeChange}
+                      style={{ width: '100%', padding: '8px', borderRadius: 6, border: '1px solid #E5E7EB', fontSize: 13, textAlign: 'center' }}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>Sous-total</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#4F46E5' }}>
+                      {new Intl.NumberFormat('fr-FR').format(sousTotalActe)} Ar
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div style={{ fontSize: 12, color: '#4F46E5', fontWeight: 600, marginBottom: 12 }}>
-                Prix unitaire : {new Intl.NumberFormat('fr-FR').format(prixApercu)} Ar
+              {/* ═══════════ SECTION 2 : TYPE DE DOCUMENT ═══════════ */}
+              {supplementsDisponibles.length > 0 && (
+                <div style={{ marginBottom: 20, paddingTop: 16, borderTop: '2px dashed #D1D5DB' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#059669', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <FileText size={16} /> TYPE DE DOCUMENT
+                  </div>
+
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 4 }}>
+                      Document à demander *
+                    </label>
+                    <select
+                      name="supplement_id"
+                      value={selectionActe.supplement_id || ''}
+                      onChange={handleSelectionActeChange}
+                      style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13, background: '#FFF' }}
+                    >
+                      <option value="">-- Sélectionnez un document --</option>
+                      {supplementsDisponibles.map(supp => {
+                        const prixSupp = parseFloat(supp[`prix_${form.service}_${selectionActe.langue}`]) || 0;
+                        return (
+                          <option key={supp.id} value={supp.id}>
+                            {supp.nom} — {new Intl.NumberFormat('fr-FR').format(prixSupp)} Ar
+                          </option>
+                        );
+                      })}
+                    </select>
+                    {getNomSupplement(selectionActe.type_acte, selectionActe.supplement_id) && (
+                      <div style={{ fontSize: 11, color: '#6B7280', marginTop: 4, fontStyle: 'italic' }}>
+                        {supplementsDisponibles.find(s => s.id === selectionActe.supplement_id)?.description}
+                      </div>
+                    )}
+                  </div>
+
+                  {selectionActe.supplement_id && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, background: '#FFF', padding: 12, borderRadius: 8, border: '1px solid #E5E7EB' }}>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>Prix unitaire</div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>
+                          {new Intl.NumberFormat('fr-FR').format(prixSuppApercu)} Ar
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>Quantité</div>
+                        <input
+                          type="number"
+                          name="quantite_supplement"
+                          min="1"
+                          value={selectionActe.quantite_supplement}
+                          onChange={handleSelectionActeChange}
+                          style={{ width: '100%', padding: '8px', borderRadius: 6, border: '1px solid #E5E7EB', fontSize: 13, textAlign: 'center' }}
+                        />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>Sous-total</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#059669' }}>
+                          {new Intl.NumberFormat('fr-FR').format(sousTotalSupp)} Ar
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ═══════════ SECTION 3 : PRIX TOTAL ═══════════ */}
+              <div style={{ paddingTop: 16, borderTop: '2px dashed #D1D5DB', marginBottom: 16 }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: 14,
+                  background: 'linear-gradient(135deg, #EEF2FF, #DBEAFE)',
+                  borderRadius: 10,
+                  border: '1px solid #4F46E5'
+                }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#4F46E5' }}>
+                    💰 Prix total (Acte + Document)
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: '#4F46E5' }}>
+                    {new Intl.NumberFormat('fr-FR').format(prixTotalApercu)} Ar
+                  </div>
+                </div>
               </div>
 
+              {/* Champs spécifiques */}
               {champsSpecifiques.length > 0 && (
                 <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed #D1D5DB' }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Renseignements spécifiques :</div>
@@ -558,98 +730,136 @@ export default function NouvelleDemande() {
               </button>
             </div>
 
-            {/* Liste panier */}
+            {/* ═══════════ PANIER ═══════════ */}
             {actesAjoutes.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {actesAjoutes.map((item, index) => {
                   const Icone = ICONES_TYPE[item.type_acte] || FileText;
-                  const prixUnitaire = calculerPrixUnitaire(item.type_acte, item.langue, form.service);
+                  const prixActe = getPrixActe(item.type_acte, item.langue, form.service);
+                  const prixSupp = getPrixSupplement(item.type_acte, item.supplement_id, item.langue, form.service);
                   const nomLangue = OPTIONS_LANGUE.find(l => l.value === item.langue)?.label;
-                  
-                   // Récupérer les détails à afficher
+                  const nomSupp = getNomSupplement(item.type_acte, item.supplement_id);
+                  const sousTotalItem = (prixActe * item.quantite) + (item.supplement_id ? prixSupp * item.quantite_supplement : 0);
+
                   const detailsKeys = Object.keys(item.details || {});
                   const detailsAffiches = detailsKeys
-                    .filter(key => item.details[key]?.trim())
+                    .filter(key => item.details[key]?.trim() && key !== 'type_acte')
                     .map(key => {
                       const champ = CHAMPS_SPECIFIQUES[item.type_acte]?.find(c => c.name === key);
                       return champ ? `${champ.label}: ${item.details[key]}` : null;
                     })
                     .filter(Boolean);
+
                   return (
-                    <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#FFFFFF' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ width: 36, height: 36, borderRadius: 8, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4F46E5' }}>
-                            <Icone size={18} />
+                    <div key={index} style={{ padding: '14px 16px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#FFFFFF' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                          <div style={{ width: 40, height: 40, borderRadius: 8, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4F46E5', flexShrink: 0 }}>
+                            <Icone size={20} />
                           </div>
-                          <div>
-                            <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>
-                              {LABELS_TYPE[item.type_acte]} <span style={{ fontSize: 12, color: '#6B7280', fontWeight: 400 }}>({nomLangue})</span>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 6 }}>
+                              {LABELS_TYPE[item.type_acte]}
+                              <span style={{ fontSize: 12, color: '#6B7280', fontWeight: 400 }}> ({nomLangue})</span>
                             </div>
-                            <div style={{ fontSize: 12, color: '#6B7280' }}>
-                              {new Intl.NumberFormat('fr-FR').format(prixUnitaire)} Ar / unité
+
+                            {/* ✅ DÉTAIL DES PRIX */}
+                            <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.7 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 400 }}>
+                                <span>📄 {LABELS_TYPE[item.type_acte]}</span>
+                                <span>{new Intl.NumberFormat('fr-FR').format(prixActe)} Ar × {item.quantite} = <strong>{new Intl.NumberFormat('fr-FR').format(prixActe * item.quantite)} Ar</strong></span>
+                              </div>
+                              {item.supplement_id && nomSupp && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 400, color: '#059669' }}>
+                                  <span>📋 {nomSupp}</span>
+                                  <span>{new Intl.NumberFormat('fr-FR').format(prixSupp)} Ar × {item.quantite_supplement} = <strong>{new Intl.NumberFormat('fr-FR').format(prixSupp * item.quantite_supplement)} Ar</strong></span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.quantite}
-                            onChange={(e) => modifierQuantite(index, e.target.value)}
-                            style={{ width: 60, padding: '6px 8px', borderRadius: 6, border: '1px solid #D1D5DB', textAlign: 'center', fontSize: 13 }}
-                          />
-                          <div style={{ fontSize: 14, fontWeight: 700, width: 110, textAlign: 'right' }}>
-                            {new Intl.NumberFormat('fr-FR').format(prixUnitaire * item.quantite)} Ar
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: 11, color: '#6B7280' }}>Total</div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: '#4F46E5' }}>
+                              {new Intl.NumberFormat('fr-FR').format(sousTotalItem)} Ar
+                            </div>
                           </div>
-                          <button type="button" onClick={() => retirerActe(index)} style={{ border: 'none', background: 'transparent', color: '#EF4444', cursor: 'pointer' }}>
-                            <Trash2 size={16} />
+                          <button type="button" onClick={() => retirerActe(index)} style={{ border: 'none', background: 'transparent', color: '#EF4444', cursor: 'pointer', padding: 4 }}>
+                            <Trash2 size={18} />
                           </button>
                         </div>
                       </div>
-                      {/* Afficher les détails */}
+
+                      {/* Détails spécifiques */}
                       {detailsAffiches.length > 0 && (
-                        <div style={{ 
-                          marginTop: 8, 
-                          paddingTop: 8, 
+                        <div style={{
+                          marginTop: 10,
+                          paddingTop: 10,
                           borderTop: '1px dashed #E5E7EB',
                           display: 'flex',
                           flexWrap: 'wrap',
                           gap: '4px 12px',
-                          fontSize: 12,
+                          fontSize: 11,
                           color: '#4B5563'
                         }}>
-                          {detailsAffiches.map((detail, i) => (
-                            <span key={i} style={{ 
-                              background: '#F3F4F6', 
-                              padding: '2px 8px', 
-                              borderRadius: 4 
-                            }}>
-                              {detail} 
+                          {detailsAffiches.map((detailTxt, i) => (
+                            <span key={i} style={{ background: '#F3F4F6', padding: '2px 8px', borderRadius: 4 }}>
+                              {detailTxt}
                             </span>
                           ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                  );
+                })}
 
-            <div style={{ marginTop: 12, padding: 16, borderRadius: 8, background: '#F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 14, fontWeight: 600 }}>Total ({totalActes} document{totalActes > 1 ? 's' : ''})</span>
-                <span style={{ fontSize: 18, fontWeight: 700, color: '#4F46E5' }}>{new Intl.NumberFormat('fr-FR').format(prixTotal)} Ar</span>
+                {/* ═══════════ TOTAL GÉNÉRAL ═══════════ */}
+                <div style={{ marginTop: 12, padding: 18, borderRadius: 10, background: 'linear-gradient(135deg, #F3F4F6, #E5E7EB)', border: '1px solid #D1D5DB' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>
+                      💰 PRIX TOTAL ({totalActes} acte{totalActes > 1 ? 's' : ''})
+                    </span>
+                    <span style={{ fontSize: 22, fontWeight: 800, color: '#4F46E5' }}>
+                      {new Intl.NumberFormat('fr-FR').format(prixTotal)} Ar
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: 12, color: '#374151', borderTop: '1px solid #D1D5DB', paddingTop: 10 }}>
+                    {actesAjoutes.map((item, idx) => {
+                      const prixActe = getPrixActe(item.type_acte, item.langue, form.service);
+                      const prixSupp = getPrixSupplement(item.type_acte, item.supplement_id, item.langue, form.service);
+                      const nomSupp = getNomSupplement(item.type_acte, item.supplement_id);
+
+                      return (
+                        <div key={idx} style={{ marginBottom: 6 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>📄 {LABELS_TYPE[item.type_acte]} × {item.quantite}</span>
+                            <span style={{ fontWeight: 600 }}>{new Intl.NumberFormat('fr-FR').format(prixActe * item.quantite)} Ar</span>
+                          </div>
+                          {item.supplement_id && nomSupp && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: 20, color: '#059669' }}>
+                              <span>📋 {nomSupp} × {item.quantite_supplement}</span>
+                              <span style={{ fontWeight: 600 }}>{new Intl.NumberFormat('fr-FR').format(prixSupp * item.quantite_supplement)} Ar</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div style={{ padding: 24, textAlign: 'center', color: '#9CA3AF', border: '2px dashed #E5E7EB', borderRadius: 8 }}>
-               Aucun acte ajouté.
-            </div>
-          )}
-        </div>
+            ) : (
+              <div style={{ padding: 24, textAlign: 'center', color: '#9CA3AF', border: '2px dashed #E5E7EB', borderRadius: 8 }}>
+                Aucun acte ajouté.
+              </div>
+            )}
+          </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 20, borderTop: '1px solid #E5E7EB' }}>
             <button type="button" onClick={() => navigate('/tableau-de-bord')} disabled={soumission} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#FFF', color: '#374151', fontSize: 13, cursor: 'pointer' }}>
-            Annuler
+              Annuler
             </button>
             <button type="submit" disabled={soumission || actesAjoutes.length === 0} style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: soumission || actesAjoutes.length === 0 ? '#9CA3AF' : '#4F46E5', color: '#FFF', fontSize: 13, fontWeight: 600, cursor: soumission || actesAjoutes.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Send size={16} /> {soumission ? 'Envoi en cours...' : 'Envoyer la demande'}

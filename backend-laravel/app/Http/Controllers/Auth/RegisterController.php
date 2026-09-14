@@ -4,41 +4,54 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Foundation\Auth\RegistersUsers;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
+use App\Models\Citoyen;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class RegisterController extends Controller
 {
-    use RegistersUsers;
-
-    protected $redirectTo = '/dashboard';
-
-    public function __construct()
+    /**
+     * Afficher la page d'inscription
+     */
+    public function showRegistrationForm()
     {
-        $this->middleware('guest');
+        return view('auth.register');
     }
 
-    protected function validator(array $data)
+    /**
+     * Traiter l'inscription
+     */
+    public function register(Request $request)
     {
-        return Validator::make($data, [
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'contact'  => ['required', 'string', 'max:20'],
-            'role'     => ['required', 'in:admin,super_admin'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        $request->validate([
+            'name'      => 'required|string|max:100',
+            'prenom'    => 'required|string|max:100',
+            'email'     => 'required|email|unique:users,email',
+            'contact'   => 'required|string|max:20',
+            'role'      => 'required|in:citoyen,admin,super_admin',
+            'password'  => 'required|string|min:6|confirmed',
         ]);
-    }
 
-    protected function create(array $data)
-    {
-        return User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'contact'  => $data['contact'],
-            'role'     => $data['role'],
-            'password' => Hash::make($data['password']),
+        // Créer l'utilisateur
+        $user = User::create([
+            'name'     => $request->name,
+            'prenom'   => $request->prenom,
+            'email'    => $request->email,
+            'contact'  => $request->contact,
+            'role'     => $request->role,
+            'password' => Hash::make($request->password),
         ]);
+
+        Auth::login($user);
+
+        // ✅ Redirection selon le rôle
+        if ($user->role === 'super_admin') {
+            return redirect()->route('super-admin.dashboard');
+        }
+
+        if ($user->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
     }
 }

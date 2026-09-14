@@ -161,6 +161,24 @@ export default function MesDemandes() {
     }, 0);
   };
 
+  // ✅ Helper : récupérer le slug du type d'acte
+  const getSlugTypeActe = (item) => {
+    if (typeof item.type_acte === 'string') return item.type_acte;
+    if (item.type_acte?.type_acte) return item.type_acte.type_acte;
+    if (item.typeActe?.type_acte) return item.typeActe.type_acte;
+    return null;
+  };
+
+  // ✅ Helper : récupérer le nom de l'acte
+  const getNomTypeActe = (item) => {
+    const slug = getSlugTypeActe(item);
+    return (typeof item.type_acte === 'object' && item.type_acte?.nom) ||
+           (typeof item.typeActe === 'object' && item.typeActe?.nom) ||
+           LABELS_TYPE[slug] ||
+           slug ||
+           'Acte inconnu';
+  };
+
   if (chargement) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: colors.bg }}>
@@ -406,8 +424,8 @@ export default function MesDemandes() {
 
       {/* ===== MODAL DÉTAILS ===== */}
       {modalOuverte && demandeSelectionnee && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: colors.card, borderRadius: 16, padding: 32, maxWidth: 800, width: '100%', maxHeight: '80vh', overflow: 'auto' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: colors.card, borderRadius: 16, padding: 32, maxWidth: 950, width: '100%', maxHeight: '85vh', overflow: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: colors.text }}>
                 Détails de la demande
@@ -417,17 +435,24 @@ export default function MesDemandes() {
               </button>
             </div>
 
+            {/* Infos générales */}
             <div style={{ marginBottom: 24, padding: 16, background: colors.input, borderRadius: 8 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13, color: colors.text }}>
                 <div><span style={{ fontWeight: 600 }}>Référence :</span> {demandeSelectionnee.reference}</div>
-                <div><span style={{ fontWeight: 600 }}>Statut :</span> {STATUTS[demandeSelectionnee.statut]?.label || demandeSelectionnee.statut}</div>
+                <div>
+                  <span style={{ fontWeight: 600 }}>Statut :</span>{' '}
+                  <span style={{ padding: '2px 10px', borderRadius: 12, background: STATUTS[demandeSelectionnee.statut]?.bg, color: STATUTS[demandeSelectionnee.statut]?.color, fontWeight: 600 }}>
+                    {STATUTS[demandeSelectionnee.statut]?.label || demandeSelectionnee.statut}
+                  </span>
+                </div>
                 <div><span style={{ fontWeight: 600 }}>Date :</span> {new Date(demandeSelectionnee.created_at).toLocaleDateString('fr-FR')}</div>
-                <div><span style={{ fontWeight: 600 }}>Service :</span> {demandeSelectionnee.service === 'express' ? '⚡ Express' : 'Standard'}</div>
+                <div><span style={{ fontWeight: 600 }}>Service global :</span> {demandeSelectionnee.service === 'express' ? '⚡ Express' : '🛡 Standard'}</div>
               </div>
             </div>
 
+            {/* Informations demandeur */}
             <div style={{ marginBottom: 16 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: colors.text }}>Informations demandeur</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: colors.text }}>👤 Informations demandeur</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 13, padding: 12, background: colors.input, borderRadius: 8, color: colors.text }}>
                 <div><span style={{ fontWeight: 600 }}>Nom :</span> {demandeSelectionnee.demandeur_nom}</div>
                 <div><span style={{ fontWeight: 600 }}>Prénom :</span> {demandeSelectionnee.demandeur_prenom}</div>
@@ -437,8 +462,9 @@ export default function MesDemandes() {
               </div>
             </div>
 
-            <div style={{ marginBottom: 16 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: colors.text }}>Personne concernée</h3>
+            {/* Personne concernée */}
+            <div style={{ marginBottom: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: colors.text }}>👥 Personne concernée</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 13, padding: 12, background: colors.input, borderRadius: 8, color: colors.text }}>
                 <div><span style={{ fontWeight: 600 }}>Nom :</span> {demandeSelectionnee.personne_nom}</div>
                 <div><span style={{ fontWeight: 600 }}>Prénom :</span> {demandeSelectionnee.personne_prenom}</div>
@@ -450,63 +476,89 @@ export default function MesDemandes() {
               </div>
             </div>
 
+            {/* ===== LISTE DES ACTES DEMANDÉS (TABLEAU) ===== */}
             <div>
-              <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: colors.text }}>Liste des actes demandés</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: colors.text }}>📄 Liste des actes demandés</h3>
               {(demandeSelectionnee.demande_actes || demandeSelectionnee.demandeActes || []).length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {(demandeSelectionnee.demande_actes || demandeSelectionnee.demandeActes).map((item, index) => {
-                    let typeActe = typeof item.type_acte === 'string' ? item.type_acte : null;
-                    if (!typeActe) typeActe = item.typeActe?.type_acte || null;
-                    if (!typeActe && item.typeActe && typeof item.typeActe === 'object') typeActe = item.typeActe.type_acte;
+                <div style={{ overflowX: 'auto', borderRadius: 8, border: `1px solid ${colors.cardBorder}` }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: colors.input }}>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Type d'acte</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Nom de l'acte</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Quantité</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Service</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Langue</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Prix unitaire</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Sous-total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(demandeSelectionnee.demande_actes || demandeSelectionnee.demandeActes).map((item, index) => {
+                        const slug = getSlugTypeActe(item);
+                        const nomActe = getNomTypeActe(item);
+                        const prixUnitaire = parseFloat(item.prix_unitaire || 0);
+                        const quantite = item.quantite || 1;
+                        const sousTotal = prixUnitaire * quantite;
+                        const service = item.type_service || item.service || demandeSelectionnee.service || 'standard';
+                        const langue = (item.langue || 'MG').toUpperCase();
 
-                    const Icone = ICONES_TYPE[typeActe] || FileText;
-                    const nomActe = LABELS_TYPE[typeActe] || item.typeActe?.nom || typeActe;
-                    const prixUnitaire = parseFloat(item.prix_unitaire || 0);
-                    const quantite = item.quantite || 1;
-
-                    const details = item.details || {};
-                    const detailsAffiches = Object.keys(details)
-                      .filter(key => details[key]?.trim())
-                      .map(key => {
-                        const champ = CHAMPS_SPECIFIQUES[typeActe]?.find(c => c.name === key);
-                        return champ ? { label: champ.label, value: details[key] } : null;
-                      })
-                      .filter(Boolean);
-
-                    return (
-                      <div key={index} style={{ display: 'flex', flexDirection: 'column', padding: '10px 14px', background: colors.card, borderRadius: 6, border: `1px solid ${colors.cardBorder}` }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div style={{ width: 32, height: 32, borderRadius: 6, background: colors.primaryLight, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.primary }}>
-                              <Icone size={16} />
-                            </div>
-                            <div>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{nomActe}</div>
-                              <div style={{ fontSize: 11, color: colors.textSecondary }}>Quantité: {quantite}</div>
-                            </div>
-                          </div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: colors.primary }}>
-                            {new Intl.NumberFormat('fr-FR').format(prixUnitaire * quantite)} Ar
-                          </div>
-                        </div>
-                        {detailsAffiches.length > 0 && (
-                          <div style={{ marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${colors.cardBorder}`, display: 'flex', flexWrap: 'wrap', gap: '4px 12px', fontSize: 11, color: colors.textSecondary }}>
-                            {detailsAffiches.map((detail, i) => (
-                              <span key={i}>
-                                <strong>{detail.label}:</strong> {detail.value}
+                        return (
+                          <tr key={index} style={{ borderBottom: index < (demandeSelectionnee.demande_actes || demandeSelectionnee.demandeActes).length - 1 ? `1px solid ${colors.cardBorder}` : 'none' }}>
+                            <td style={{ padding: '10px 12px', color: colors.text, fontWeight: 500, textTransform: 'capitalize' }}>
+                              {slug || '—'}
+                            </td>
+                            <td style={{ padding: '10px 12px', color: colors.text, fontWeight: 600 }}>
+                              {nomActe}
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'center', color: colors.text, fontWeight: 600 }}>
+                              {quantite}
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                              <span style={{
+                                padding: '2px 8px',
+                                borderRadius: 10,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                background: service === 'express' ? 'rgba(245,158,11,0.15)' : colors.primaryLight,
+                                color: service === 'express' ? '#D97706' : colors.primary
+                              }}>
+                                {service === 'express' ? '⚡ Express' : '🛡 Standard'}
                               </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  <div style={{ marginTop: 8, padding: '12px 14px', background: colors.input, borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>Total</span>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: colors.primary }}>
-                      {new Intl.NumberFormat('fr-FR').format(calculerTotalDemande(demandeSelectionnee))} Ar
-                    </span>
-                  </div>
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                              <span style={{
+                                padding: '2px 8px',
+                                borderRadius: 10,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                background: langue === 'MG' ? '#FEF3C7' : '#DBEAFE',
+                                color: langue === 'MG' ? '#92400E' : '#1E40AF'
+                              }}>
+                                {langue === 'MG' ? '🇲🇬 Malgache' : '🇫🇷 Français'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', color: colors.textSecondary }}>
+                              {new Intl.NumberFormat('fr-FR').format(prixUnitaire)} Ar
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', color: colors.primary, fontWeight: 700 }}>
+                              {new Intl.NumberFormat('fr-FR').format(sousTotal)} Ar
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background: colors.input }}>
+                        <td colSpan={6} style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: colors.text, fontSize: 13 }}>
+                          TOTAL GÉNÉRAL
+                        </td>
+                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: colors.primary, fontSize: 15 }}>
+                          {new Intl.NumberFormat('fr-FR').format(calculerTotalDemande(demandeSelectionnee))} Ar
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
               ) : (
                 <div style={{ padding: 16, textAlign: 'center', color: colors.textMuted, background: colors.input, borderRadius: 8 }}>
@@ -514,6 +566,42 @@ export default function MesDemandes() {
                 </div>
               )}
             </div>
+
+            {/* ===== DÉTAILS SPÉCIFIQUES PAR ACTE ===== */}
+            {(demandeSelectionnee.demande_actes || demandeSelectionnee.demandeActes || []).length > 0 && (
+              <div style={{ marginTop: 24 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: colors.text }}>📋 Détails spécifiques par acte</h3>
+                {(demandeSelectionnee.demande_actes || demandeSelectionnee.demandeActes).map((item, index) => {
+                  const slug = getSlugTypeActe(item);
+                  const nomActe = getNomTypeActe(item);
+                  const details = item.details || {};
+                  const detailsAffiches = Object.keys(details)
+                    .filter(key => details[key] !== null && details[key] !== undefined && String(details[key]).trim() !== '')
+                    .map(key => {
+                      const champ = CHAMPS_SPECIFIQUES[slug]?.find(c => c.name === key);
+                      return champ ? { label: champ.label, value: details[key] } : { label: key, value: details[key] };
+                    })
+                    .filter(d => d.value && String(d.value).trim());
+
+                  if (detailsAffiches.length === 0) return null;
+
+                  return (
+                    <div key={index} style={{ marginBottom: 12, padding: 12, background: colors.input, borderRadius: 8 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 8 }}>
+                        {nomActe}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px', fontSize: 12, color: colors.textSecondary }}>
+                        {detailsAffiches.map((d, i) => (
+                          <div key={i}>
+                            <span style={{ fontWeight: 500, color: colors.text }}>{d.label} :</span> {String(d.value)}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={fermerModal} style={{ padding: '8px 20px', borderRadius: 8, border: `1px solid ${colors.cardBorder}`, background: colors.card, color: colors.text, fontSize: 13, cursor: 'pointer' }}>

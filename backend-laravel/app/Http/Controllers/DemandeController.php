@@ -77,7 +77,7 @@ class DemandeController extends Controller
     /**
      * Enregistrer une nouvelle demande d'acte(s)
      */
-    public function store(Request $request)
+    public function storeGroupe(Request $request)
     {
         try {
             $citoyen = Auth::user();
@@ -96,7 +96,7 @@ class DemandeController extends Controller
             return DB::transaction(function () use ($request, $citoyen, $citoyenId) {
                 
                 // 1. Génération du numéro de référence unique
-                $reference = 'DEM-' . date('Ymd') . '-' . strtoupper(uniqid());
+                $reference = strtoupper(substr(uniqid(), 0, 6));
 
                 // 2. Création de la Demande globale
                 $demande = Demande::create([

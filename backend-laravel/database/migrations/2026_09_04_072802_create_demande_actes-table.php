@@ -33,6 +33,7 @@ return new class extends Migration
             $table->decimal('prix_unitaire', 10, 2)->default(0.00);
             $table->integer('quantite')->default(1);
             $table->decimal('sous_total', 10, 2)->default(0.00);
+            $table->decimal('prix_supplement', 10, 2)->default(0);
 
             // 5. Suivi du traitement
             $table->enum('statut', ['en_attente', 'accepté', 'refusé'])->default('en_attente');
