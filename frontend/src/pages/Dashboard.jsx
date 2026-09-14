@@ -54,25 +54,63 @@ export default function Dashboard() {
 
   // ✅ Fonction robuste pour extraire le nom du type d'acte
   const getNomTypeActe = (acte) => {
-    // Cas 1 : type_acte est un objet (relation chargée par Laravel)
-    if (acte?.type_acte && typeof acte.type_acte === 'object') {
+    if (!acte) return 'Acte';
+
+    // Cas 1 : relation typeActeRelation
+    if (acte.typeActeRelation) {
+      return acte.typeActeRelation.nom
+        || LABELS_TYPE[acte.typeActeRelation.type_acte]
+        || acte.typeActeRelation.type_acte
+        || 'Acte';
+    }
+
+    // Cas 2 : relation type_acte_relation (snake_case)
+    if (acte.type_acte_relation) {
+      return acte.type_acte_relation.nom
+        || LABELS_TYPE[acte.type_acte_relation.type_acte]
+        || acte.type_acte_relation.type_acte
+        || 'Acte';
+    }
+
+    // Cas 3 : type_acte est un objet
+    if (acte.type_acte && typeof acte.type_acte === 'object') {
       return acte.type_acte.nom
         || LABELS_TYPE[acte.type_acte.type_acte]
         || acte.type_acte.type_acte
         || 'Acte';
     }
-    // Cas 2 : type_acte est une string (slug)
-    if (typeof acte?.type_acte === 'string') {
+
+    // Cas 4 : type_acte est une string
+    if (typeof acte.type_acte === 'string' && acte.type_acte) {
       return LABELS_TYPE[acte.type_acte] || acte.type_acte;
     }
-    // Cas 3 : relation typeActe (camelCase)
-    if (acte?.typeActe) {
-      return acte.typeActe.nom
-        || LABELS_TYPE[acte.typeActe.type_acte]
-        || acte.typeActe.type_acte
-        || 'Acte';
-    }
+
     return 'Acte';
+  };
+
+  // ✅ Fonction pour obtenir le nom du supplément (sous-type)
+  const getNomSupplement = (acte) => {
+    if (!acte) return null;
+
+    // Cas 1 : relation supplement (chargée par Laravel)
+    if (acte.supplement) {
+      return acte.supplement.nom
+        || acte.supplement.libelle
+        || acte.supplement.description
+        || null;
+    }
+
+    // Cas 2 : champ direct supplement_nom
+    if (acte.supplement_nom) {
+      return acte.supplement_nom;
+    }
+
+    // Cas 3 : supplement_libelle
+    if (acte.supplement_libelle) {
+      return acte.supplement_libelle;
+    }
+
+    return null;
   };
 
   useEffect(() => {
@@ -101,13 +139,11 @@ export default function Dashboard() {
       const demandes = resDemandes.data.demandes || [];
       setMesDemandes(demandes);
 
-      // 🔍 DEBUG : afficher la structure exacte pour diagnostic
+      // 🔍 DEBUG
       if (demandes.length > 0) {
         const premierActe = demandes[0]?.demande_actes?.[0] || demandes[0]?.demandeActes?.[0];
         console.log('🔍 Structure du premier acte :', premierActe);
-        console.log('🔍 type_acte :', premierActe?.type_acte);
-        console.log('🔍 typeof type_acte :', typeof premierActe?.type_acte);
-        console.log('🔍 typeActe :', premierActe?.typeActe);
+        console.log('🔍 supplement :', premierActe?.supplement);
       }
     } catch (err) {
       setErreur('Impossible de charger vos données.');
@@ -189,8 +225,8 @@ export default function Dashboard() {
   const demandesAcceptees = mesDemandes.filter(d => d.statut === 'acceptée').length;
   const demandesEnAttente = mesDemandes.filter(d => d.statut === 'en attente').length;
   const demandesRefusees = mesDemandes.filter(d => d.statut === 'refusée').length;
-  const notifications = mesDemandes.filter(d => 
-  d.statut === 'acceptée' && d.pdf_path && !d.notification_lue
+  const notifications = mesDemandes.filter(d =>
+    d.statut === 'acceptée' && d.pdf_path && !d.notification_lue
   );
 
   return (
@@ -384,9 +420,6 @@ export default function Dashboard() {
                 const nbActes = actes.reduce((sum, a) => sum + (a.quantite || 1), 0);
                 const totalPrix = actes.reduce((sum, a) => sum + (parseFloat(a.prix_unitaire || 0) * (a.quantite || 1)), 0);
 
-                // ✅ Utilise la fonction robuste
-                const nomsTypesActes = actes.map(a => getNomTypeActe(a)).filter(Boolean).join(', ');
-
                 return (
                   <div key={d.id_demande} style={{ padding: '16px 24px', borderBottom: index < mesDemandes.length - 1 ? `1px solid ${colors.cardBorder}` : 'none', display: 'flex', alignItems: 'flex-start', gap: 16 }}>
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: config.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 4 }}>
@@ -414,14 +447,54 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      {/* Ligne 3 : Nombre d'actes + Type d'actes */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, fontSize: 12, color: colors.textSecondary, marginBottom: 6 }}>
+                      {/* Ligne 3 : Nombre d'actes + Détail avec suppléments */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, color: colors.textSecondary, marginBottom: 6 }}>
                         <div>
                           <span style={{ fontWeight: 500 }}>Nombre d'actes :</span> {nbActes}
                         </div>
-                        {nomsTypesActes && (
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <span style={{ fontWeight: 500 }}>Type d'acte(s) :</span> {nomsTypesActes}
+
+                        {/* ✅ DÉTAIL PAR ACTE AVEC SOUS-TYPE (SUPPLÉMENT) */}
+                        {actes.length > 0 && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <span style={{ fontWeight: 500 }}>Détail des actes :</span>
+                            {actes.map((a, idx) => {
+                              const nomType = getNomTypeActe(a);
+                              const nomSupplement = getNomSupplement(a);
+                              const langue = a.langue ? `(${a.langue.toUpperCase()})` : '';
+
+                              return (
+                                <div
+                                  key={idx}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    padding: '6px 10px',
+                                    background: colors.input || '#F3F4F6',
+                                    borderRadius: 6,
+                                    fontSize: 11,
+                                    flexWrap: 'wrap'
+                                  }}
+                                >
+                                  <span style={{ fontWeight: 600, color: colors.text }}>
+                                    📄 {nomType}
+                                  </span>
+                                  {nomSupplement && (
+                                    <span style={{ color: '#4F46E5', fontWeight: 600 }}>
+                                      + {nomSupplement}
+                                    </span>
+                                  )}
+                                  {langue && (
+                                    <span style={{ color: colors.textMuted }}>
+                                      {langue}
+                                    </span>
+                                  )}
+                                  <span style={{ marginLeft: 'auto', color: colors.primary, fontWeight: 600 }}>
+                                    × {a.quantite}
+                                  </span>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -443,8 +516,8 @@ export default function Dashboard() {
                         )}
                       </div>
                     </div>
-                    
-                    {/* ✅ BOUTON PDF (AJOUTER ICI, avant le span du statut) */}
+
+                    {/* ✅ BOUTON PDF */}
                     {d.statut === 'acceptée' && d.pdf_path && (
                       <a
                         href={`${API_URL}/demandes/${d.id_demande}/pdf`}

@@ -306,7 +306,7 @@ class DemandeController extends Controller
             $citoyenId = $citoyen->id_citoyens ?? $citoyen->id;
 
             $demandes = Demande::where('citoyen_id', $citoyenId)
-                ->with(['demandeActes.typeActe', 'demandeActes.acte'])
+                ->with(['demandeActes.typeActe', 'demandeActes.acte', 'demandeActes.supplement'])
                 ->orderBy('created_at', 'desc')
                 ->get();
 

@@ -2,75 +2,65 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class DemandeActe extends Model
 {
-    use HasFactory;
+    protected $table = 'demande_actes';
 
     protected $fillable = [
         'demande_id',
-        'type_acte_id',
+        'type_acte_id',        // ✅ C'est type_acte_id
+        'supplement_id',
         'acte_type',
         'acte_id',
+        'langue',
+        'prix_acte',
+        'prix_supplement',
         'prix_unitaire',
         'quantite',
+        'quantite_supplement',
         'sous_total',
         'statut',
         'commentaire',
-        'date_traitement'
+        'date_traitement',
     ];
 
     protected $casts = [
+        'prix_acte' => 'decimal:2',
+        'prix_supplement' => 'decimal:2',
         'prix_unitaire' => 'decimal:2',
         'sous_total' => 'decimal:2',
-        'date_traitement' => 'datetime'
+        'date_traitement' => 'datetime',
     ];
 
-    // Relations
+    // ✅ Relation avec la demande
     public function demande()
     {
         return $this->belongsTo(Demande::class, 'demande_id', 'id_demande');
     }
 
+    // ✅ Relation avec le supplément
+    public function supplement()
+    {
+        return $this->belongsTo(TypeActeSupplement::class, 'supplement_id', 'id');
+    }
+
+    // ✅ CORRECTION : Utiliser type_acte_id (pas type_acte)
     public function typeActe()
     {
         return $this->belongsTo(TypeActe::class, 'type_acte_id', 'id');
     }
 
-    // Relation polymorphique vers l'acte spécifique
-    public function Acte()
+    // ✅ Alias
+    public function typeActeRelation()
+    {
+        return $this->belongsTo(TypeActe::class, 'type_acte_id', 'id');
+    }
+
+    // ✅ Relation polymorphe
+    public function acte()
     {
         return $this->morphTo('acte', 'acte_type', 'acte_id');
-    }
-
-    // Accesseurs
-    public function getTypeActeLabelAttribute()
-    {
-        return $this->typeActe?->nom ?? $this->type_acte;
-    }
-
-    public function getTypeActeSlugAttribute()
-    {
-        return $this->typeActe?->type_acte;
-    }
-
-    public function getSousTotalAttribute($value)
-    {
-        if ($value == 0 && $this->prix_unitaire > 0) {
-            return $this->prix_unitaire * $this->quantite;
-        }
-        return $value;
-    }
-
-    // Mutateur pour calculer automatiquement le sous-total
-    public function setSousTotalAttribute($value)
-    {
-        if ($value == null) {
-            $this->attributes['sous_total'] = $this->prix_unitaire * $this->quantite;
-        } else {
-            $this->attributes['sous_total'] = $value;
-        }
     }
 }

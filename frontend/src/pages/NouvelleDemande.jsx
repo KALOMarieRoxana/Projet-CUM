@@ -112,7 +112,6 @@ export default function NouvelleDemande() {
 
   const [detailsActe, setDetailsActe] = useState({});
 
-  // ✅ State avec quantités séparées
   const [selectionActe, setSelectionActe] = useState({
     type_acte: 'naissance',
     langue: 'mg',
@@ -125,7 +124,6 @@ export default function NouvelleDemande() {
 
   const estMoiMeme = form.demandeur_relation === 'moi_meme';
 
-  // ✅ Suppléments disponibles
   const supplementsDisponibles = useMemo(() => {
     const typeObj = typesActes.find(t => t.type_acte === selectionActe.type_acte);
     return typeObj?.supplements || [];
@@ -214,7 +212,6 @@ export default function NouvelleDemande() {
     setDetailsActe(prev => ({ ...prev, [name]: value }));
   };
 
-  // ✅ Gestion du changement
   const handleSelectionActeChange = (e) => {
     const { name, value } = e.target;
 
@@ -235,7 +232,6 @@ export default function NouvelleDemande() {
     });
   };
 
-  // ✅ Prix unitaire de l'acte
   const getPrixActe = (typeKey, langue, modeService) => {
     const typeObj = typesActes.find(t => t.type_acte === typeKey);
     if (!typeObj) return 0;
@@ -243,7 +239,6 @@ export default function NouvelleDemande() {
     return parseFloat(typeObj[champ]) || 0;
   };
 
-  // ✅ Prix unitaire du supplément
   const getPrixSupplement = (typeKey, supplementId, langue, modeService) => {
     if (!supplementId) return 0;
     const typeObj = typesActes.find(t => t.type_acte === typeKey);
@@ -254,7 +249,6 @@ export default function NouvelleDemande() {
     return parseFloat(supp[champ]) || 0;
   };
 
-  // ✅ Nom du supplément
   const getNomSupplement = (typeKey, supplementId) => {
     if (!supplementId) return null;
     const typeObj = typesActes.find(t => t.type_acte === typeKey);
@@ -316,7 +310,6 @@ export default function NouvelleDemande() {
     setActesAjoutes(prev => prev.map((item, i) => i === index ? { ...item, quantite_supplement: q } : item));
   };
 
-  // ✅ Prix total
   const prixTotal = actesAjoutes.reduce((sum, a) => {
     const prixActe = getPrixActe(a.type_acte, a.langue, form.service);
     const prixSupp = getPrixSupplement(a.type_acte, a.supplement_id, a.langue, form.service);
@@ -366,7 +359,6 @@ export default function NouvelleDemande() {
         const prixActe = getPrixActe(acte.type_acte, acte.langue, form.service);
         const prixSupp = getPrixSupplement(acte.type_acte, acte.supplement_id, acte.langue, form.service);
         const quantiteSupp = acte.supplement_id ? acte.quantite_supplement : 0;
-        const totalUnitaire = (prixActe * acte.quantite) + (prixSupp * quantiteSupp);
 
         return {
           type_acte_id: typesActes.find(t => t.type_acte === acte.type_acte)?.id,
@@ -376,7 +368,8 @@ export default function NouvelleDemande() {
           quantite_supplement: quantiteSupp,
           prix_acte: prixActe,
           prix_supplement: prixSupp,
-          prix_unitaire: totalUnitaire,
+          prix_unitaire: prixActe + prixSupp,
+          sous_total: (prixActe * acte.quantite) + (prixSupp * quantiteSupp),
           details: {
             ...acte.details,
             personne_nom: form.personne_nom,
@@ -559,9 +552,7 @@ export default function NouvelleDemande() {
             </div>
           </div>
 
-          {/* ═══════════════════════════════════════════════════════ */}
-          {/* SÉLECTION DES ACTES                                    */}
-          {/* ═══════════════════════════════════════════════════════ */}
+          {/* SÉLECTION DES ACTES */}
           <div style={{ marginBottom: 24, paddingTop: 20, borderTop: '1px solid #E5E7EB' }}>
             <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
               <ShoppingCart size={18} color="#4F46E5" /> Sélection des actes
@@ -569,7 +560,7 @@ export default function NouvelleDemande() {
 
             <div style={{ background: '#F9FAFB', padding: 20, borderRadius: 12, border: '1px solid #E5E7EB', marginBottom: 20 }}>
 
-              {/* ═══════════ SECTION 1 : TYPE D'ACTE ═══════════ */}
+              {/* SECTION 1 : TYPE D'ACTE */}
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <FileText size={16} /> TYPE D'ACTE
@@ -619,7 +610,7 @@ export default function NouvelleDemande() {
                 </div>
               </div>
 
-              {/* ═══════════ SECTION 2 : TYPE DE DOCUMENT ═══════════ */}
+              {/* SECTION 2 : TYPE DE DOCUMENT */}
               {supplementsDisponibles.length > 0 && (
                 <div style={{ marginBottom: 20, paddingTop: 16, borderTop: '2px dashed #D1D5DB' }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#059669', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -683,7 +674,7 @@ export default function NouvelleDemande() {
                 </div>
               )}
 
-              {/* ═══════════ SECTION 3 : PRIX TOTAL ═══════════ */}
+              {/* SECTION 3 : PRIX TOTAL */}
               <div style={{ paddingTop: 16, borderTop: '2px dashed #D1D5DB', marginBottom: 16 }}>
                 <div style={{
                   display: 'flex',
@@ -730,7 +721,7 @@ export default function NouvelleDemande() {
               </button>
             </div>
 
-            {/* ═══════════ PANIER ═══════════ */}
+            {/* PANIER */}
             {actesAjoutes.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {actesAjoutes.map((item, index) => {
@@ -753,17 +744,17 @@ export default function NouvelleDemande() {
                   return (
                     <div key={index} style={{ padding: '14px 16px', borderRadius: 8, border: '1px solid #E5E7EB', background: '#FFFFFF' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
                           <div style={{ width: 40, height: 40, borderRadius: 8, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4F46E5', flexShrink: 0 }}>
                             <Icone size={20} />
                           </div>
-                          <div style={{ flex: 1 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 6 }}>
                               {LABELS_TYPE[item.type_acte]}
                               <span style={{ fontSize: 12, color: '#6B7280', fontWeight: 400 }}> ({nomLangue})</span>
                             </div>
 
-                            {/* ✅ DÉTAIL DES PRIX */}
+                            {/* DÉTAIL DES PRIX */}
                             <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.7 }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 400 }}>
                                 <span>📄 {LABELS_TYPE[item.type_acte]}</span>
@@ -779,13 +770,42 @@ export default function NouvelleDemande() {
                           </div>
                         </div>
 
+                        {/* ✅ INPUTS DE QUANTITÉ + TOTAL + SUPPRIMER */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                          <div style={{ textAlign: 'right' }}>
+                          {/* Qté acte */}
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: 10, color: '#6B7280', marginBottom: 2 }}>Qté acte</div>
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.quantite}
+                              onChange={(e) => modifierQuantite(index, e.target.value)}
+                              style={{ width: 55, padding: '4px 6px', borderRadius: 6, border: '1px solid #D1D5DB', fontSize: 12, textAlign: 'center' }}
+                            />
+                          </div>
+
+                          {/* Qté supplément */}
+                          {item.supplement_id && (
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: 10, color: '#6B7280', marginBottom: 2 }}>Qté doc</div>
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.quantite_supplement}
+                                onChange={(e) => modifierQuantiteSupp(index, e.target.value)}
+                                style={{ width: 55, padding: '4px 6px', borderRadius: 6, border: '1px solid #D1D5DB', fontSize: 12, textAlign: 'center' }}
+                              />
+                            </div>
+                          )}
+
+                          {/* Total */}
+                          <div style={{ textAlign: 'right', minWidth: 90 }}>
                             <div style={{ fontSize: 11, color: '#6B7280' }}>Total</div>
-                            <div style={{ fontSize: 16, fontWeight: 700, color: '#4F46E5' }}>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: '#4F46E5' }}>
                               {new Intl.NumberFormat('fr-FR').format(sousTotalItem)} Ar
                             </div>
                           </div>
+
                           <button type="button" onClick={() => retirerActe(index)} style={{ border: 'none', background: 'transparent', color: '#EF4444', cursor: 'pointer', padding: 4 }}>
                             <Trash2 size={18} />
                           </button>
@@ -815,7 +835,7 @@ export default function NouvelleDemande() {
                   );
                 })}
 
-                {/* ═══════════ TOTAL GÉNÉRAL ═══════════ */}
+                {/* TOTAL GÉNÉRAL */}
                 <div style={{ marginTop: 12, padding: 18, borderRadius: 10, background: 'linear-gradient(135deg, #F3F4F6, #E5E7EB)', border: '1px solid #D1D5DB' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <span style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>

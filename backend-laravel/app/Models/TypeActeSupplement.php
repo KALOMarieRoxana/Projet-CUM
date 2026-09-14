@@ -31,12 +31,9 @@ class TypeActeSupplement extends Model
 
     public function typeActe()
     {
-        return $this->belongsTo(TypeActe::class, 'type_acte_id');
+        return $this->belongsTo(TypeActe::class, 'type_acte_id', 'id');
     }
 
-    /**
-     * Calculer le prix selon la langue et le service
-     */
     public function getPrix($langue = 'fr', $service = 'standard')
     {
         $champ = "prix_{$service}_{$langue}";
