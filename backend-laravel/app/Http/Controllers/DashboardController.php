@@ -64,23 +64,19 @@ class DashboardController extends Controller
     /**
      * Dashboard propre au Super Admin
      */
-    public function superAdminIndex(Request $request)
+    public function superAdminIndex()
     {
-        // Statistiques globales du système
-        $totalAdmins       = User::where('role', 'admin')->count();
-        $totalDemandes     = Demande::count();
-        $demandesEnAttente = Demande::enAttente()->count();
-        $demandesAcceptees = Demande::acceptee()->count();
-        $demandesRefusees  = Demande::refusee()->count();
+        // ✅ Statistiques
+        $totalAdmins = \App\Models\User::where('role', 'admin')->count();
+        $totalDemandes = \App\Models\Demande::count();
+        $demandesEnAttente = \App\Models\Demande::where('statut', 'en_attente')->count();
+        $demandesAcceptees = \App\Models\Demande::where('statut', 'acceptée')->count();
+        $demandesRefusees = \App\Models\Demande::where('statut', 'refusée')->count();
 
-        // Récupération des derniers admins enregistrés
-        $admins = User::where('role', 'admin')->latest()->take(5)->get();
-        
-        // Dernières demandes avec Eager Loading
-        $demandes = Demande::with([
-            'citoyen', 
-            'demandeActes.typeActe'
-        ])->latest()->take(5)->get();
+        // ✅ Pagination (au lieu de ->get())
+        $demandes = \App\Models\Demande::with(['citoyen', 'demandeActes.typeActe'])
+            ->latest()
+            ->paginate(10);   // ⬅️ OBLIGATOIRE pour avoir ->total() dans la vue
 
         return view('super-admin.dashboard', compact(
             'totalAdmins',
@@ -88,7 +84,6 @@ class DashboardController extends Controller
             'demandesEnAttente',
             'demandesAcceptees',
             'demandesRefusees',
-            'admins',
             'demandes'
         ));
     }

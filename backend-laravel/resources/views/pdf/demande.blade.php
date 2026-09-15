@@ -336,28 +336,6 @@
 <body>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- EN-TÊTE OFFICIEL (logo Base64)                              -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <div class="entete-officiel">
-        <table class="entete-table">
-            <tr>
-                <td class="entete-logo-cell">
-                    @if(!empty($logoBase64))
-                        <img src="{{ $logoBase64 }}" alt="Logo" class="entete-logo">
-                    @else
-                        <div class="entete-logo" style="border: 1px dashed #ccc; text-align: center; line-height: 80px; font-size: 9px; color: #999;">
-                            Logo
-                        </div>
-                    @endif
-                </td>
-                <td class="entete-texte-cell">
-                    <div class="entete-ligne1">République de Madagascar</div>
-                    <div class="entete-ligne2">État civil</div>
-                </td>
-            </tr>
-        </table>
-    </div>
-    <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- EN-TÊTE OFFICIEL (logo gauche + infos droite)               -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     <div class="entete-officiel">

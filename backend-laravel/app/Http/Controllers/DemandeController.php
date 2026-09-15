@@ -485,17 +485,69 @@ class DemandeController extends Controller
                 return response()->json(['message' => 'Non authentifié.'], 401);
             }
 
+            // ✅ Normaliser le rôle (gérer underscore/tiret/espaces/casse)
+            $role = strtolower(str_replace(['-', ' '], '_', $user->role ?? 'citoyen'));
+
+            \Log::info('🔍 show() demandé', [
+                'id' => $id,
+                'user_id' => $user->id,
+                'role_brut' => $user->role,
+                'role_normalise' => $role,
+            ]);
+
+            // ✅ Admin & Super Admin & Agent → accès TOTAL
+            if (in_array($role, ['admin', 'super_admin', 'agent'])) {
+
+                $demande = Demande::with([
+                    'citoyen',
+                    'traiteur',
+                    'demandeActes.typeActe',
+                    'demandeActes.supplement',
+                    'demandeActes.acte',
+                ])->find($id);
+
+                if (!$demande) {
+                    \Log::warning('⚠️ Demande introuvable: id=' . $id);
+                    return redirect()->back()->with('error', 'Demande introuvable.');
+                }
+
+                // ✅ Retour JSON si API
+                if (request()->wantsJson()) {
+                    return response()->json(['demande' => $demande], 200);
+                }
+
+                // ✅ Vue selon le rôle
+                $vue = $role === 'super_admin'
+                    ? 'super-admin.demandes.show'
+                    : 'admin.demandes_show';
+
+                // Si la vue super-admin n'existe pas, on fallback sur admin
+                if (!view()->exists($vue)) {
+                    $vue = 'admin.demandes_show';
+                }
+
+                // Si admin.demandes_show n'existe pas non plus → vue de secours
+                if (!view()->exists($vue)) {
+                    \Log::warning('⚠️ Aucune vue de détail trouvée, fallback');
+                    return response()->json(['demande' => $demande], 200);
+                }
+
+                return view($vue, compact('demande'));
+            }
+
+            // ✅ Citoyen → uniquement ses demandes
             $userId = $user->id_citoyens ?? $user->id;
 
-            // Si l'utilisateur est admin, il peut voir toutes les demandes
-            if (in_array($user->role ?? '', ['admin', 'super_admin', 'agent'])) {
-                $demande = Demande::with(['citoyen', 'traitePar', 'demandeActes.typeActe', 'demandeActes.acte'])
-                    ->findOrFail($id);
-            } else {
-                // Sinon, seulement ses propres demandes
-                $demande = Demande::where('citoyen_id', $userId)
-                    ->with(['demandeActes.typeActe', 'demandeActes.acte'])
-                    ->findOrFail($id);
+            $demande = Demande::where('citoyen_id', $userId)
+                ->with([
+                    'demandeActes.typeActe',
+                    'demandeActes.supplement',
+                    'demandeActes.acte',
+                ])
+                ->find($id);
+
+            if (!$demande) {
+                return redirect()->back()->with('error', 'Demande introuvable.');
             }
 
             if (request()->wantsJson()) {
@@ -505,14 +557,13 @@ class DemandeController extends Controller
             return view('admin.demandes_show', compact('demande'));
 
         } catch (\Exception $e) {
-            Log::error('Erreur show demande: ' . $e->getMessage());
-            if (request()->wantsJson()) {
-                return response()->json(['message' => 'Demande non trouvée.'], 404);
-            }
-            return redirect()->back()->with('error', 'Demande non trouvée.');
+            \Log::error('❌ Erreur show(): ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+
+            return redirect()->back()->with('error', 'Erreur: ' . $e->getMessage());
         }
     }
-
+    
     public function verifierStatut($reference)
     {
         try {

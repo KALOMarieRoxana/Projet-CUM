@@ -3,21 +3,40 @@
 @section('title', 'Tableau de bord - Super Admin')
 
 @section('content')
+
+{{-- ═══════════ HEADER ═══════════ --}}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold mb-1">Tableau de bord Super Admin</h4>
-        <p class="text-muted small">Vue d'ensemble globale de la plateforme et gestion administrative.</p>
+        <p class="text-muted small mb-0">Vue d'ensemble globale de la plateforme et gestion administrative.</p>
     </div>
     <a href="{{ route('super-admin.admins.index') }}" class="btn btn-primary">
         <i class="bi bi-people-fill me-1"></i> Gérer tous les administrateurs
     </a>
 </div>
 
-<!-- 4 Cartes d'indicateurs clés -->
+{{-- ═══════════ ALERTES ═══════════ --}}
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+{{-- ═══════════ 4 CARTES STATS ═══════════ --}}
 <div class="row g-3 mb-4">
+
+    {{-- Administrateurs --}}
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-icon bg-indigo bg-opacity-10 text-primary" style="background-color: #e0e7ff; color: #4f46e5;">
+            <div class="stat-icon" style="background-color: #e0e7ff; color: #4f46e5;">
                 <i class="bi bi-shield-lock-fill fs-4"></i>
             </div>
             <div>
@@ -26,9 +45,11 @@
             </div>
         </div>
     </div>
+
+    {{-- Total --}}
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+            <div class="stat-icon" style="background-color: #dbeafe; color: #2563eb;">
                 <i class="bi bi-inbox-fill fs-4"></i>
             </div>
             <div>
@@ -37,9 +58,11 @@
             </div>
         </div>
     </div>
+
+    {{-- En attente --}}
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+            <div class="stat-icon" style="background-color: #fef3c7; color: #d97706;">
                 <i class="bi bi-clock-fill fs-4"></i>
             </div>
             <div>
@@ -48,9 +71,11 @@
             </div>
         </div>
     </div>
+
+    {{-- Acceptées --}}
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-icon bg-success bg-opacity-10 text-success">
+            <div class="stat-icon" style="background-color: #d1fae5; color: #059669;">
                 <i class="bi bi-check-circle-fill fs-4"></i>
             </div>
             <div>
@@ -61,83 +86,235 @@
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- Section 1 : Liste rapide des Administrateurs -->
-    <div class="col-lg-6">
-        <div class="content-card h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold mb-0">Administrateurs récents</h5>
-                <a href="{{ route('super-admin.admins.index') }}" class="btn btn-sm btn-link text-decoration-none">Voir tout</a>
-            </div>
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Nom</th>
-                            <th>Email</th>
-                            <th>Contact</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($admins as $admin)
-                            <tr>
-                                <td class="fw-semibold">{{ $admin->name }}</td>
-                                <td>{{ $admin->email }}</td>
-                                <td>{{ $admin->contact ?? 'N/A' }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="3" class="text-center py-3 text-muted">Aucun administrateur enregistré.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+{{-- ═══════════ TABLEAU DES DEMANDES ═══════════ --}}
+<div class="content-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5 class="fw-bold mb-0">Liste des demandes</h5>
+            <p class="text-muted small mb-0">
+                {{ method_exists($demandes, 'total') ? $demandes->total() : $demandes->count() }} demande(s) au total
+            </p>
         </div>
+        <a href="{{ route('super-admin.demandes') }}" class="btn btn-sm btn-outline-primary">
+            Voir tout <i class="bi bi-arrow-right ms-1"></i>
+        </a>
     </div>
 
-    <!-- Section 2 : Aperçu des dernières demandes -->
-    <div class="col-lg-6">
-        <div class="content-card h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold mb-0">Dernières demandes reçues</h5>
-                <a href="{{ route('super-admin.demandes') }}" class="btn btn-sm btn-link text-decoration-none">Voir tout</a>
-            </div>
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Demandeur</th>
-                            <th>Statut</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($demandes as $demande)
-                            <tr>
-                                <td>
-                                    <div class="fw-semibold">{{ $demande->user->name ?? 'N/A' }}</div>
-                                </td>
-                                <td>
-                                    @if($demande->statut == 'en_attente')
-                                        <span class="badge bg-warning bg-opacity-10 text-warning px-2 py-1 rounded-pill">En attente</span>
-                                    @elseif($demande->statut == 'acceptee')
-                                        <span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill">Acceptée</span>
-                                    @else
-                                        <span class="badge bg-danger bg-opacity-10 text-danger px-2 py-1 rounded-pill">Refusée</span>
-                                    @endif
-                                </td>
-                                <td>{{ $demande->created_at->format('d/m/Y') }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="3" class="text-center py-3 text-muted">Aucune demande récente.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Référence</th>
+                    <th>Demandeur</th>
+                    <th>Contact</th>
+                    <th>Service</th>
+                    <th>Prix total</th>
+                    <th>Statut</th>
+                    <th>Date</th>
+                    <th class="text-end pe-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($demandes as $demande)
+                    <tr>
+                        {{-- Référence --}}
+                        <td class="ps-3">
+                            <div class="fw-semibold">{{ $demande->reference }}</div>
+                            <small class="text-muted">#{{ $demande->id_demande ?? $demande->id }}</small>
+                        </td>
+
+                        {{-- Demandeur --}}
+                        <td>
+                            <div class="fw-semibold">
+                                {{ $demande->demandeur_prenom ?? '' }}
+                                {{ $demande->demandeur_nom ?? '' }}
+                            </div>
+                            <small class="text-muted">
+                                {{ $demande->personne_prenom ?? '' }} {{ $demande->personne_nom ?? '' }}
+                            </small>
+                        </td>
+
+                        {{-- Contact --}}
+                        <td>
+                            <div>{{ $demande->demandeur_contact ?? '—' }}</div>
+                        </td>
+
+                        {{-- Service --}}
+                        <td>
+                            @if(($demande->service ?? 'standard') === 'express')
+                                <span class="badge bg-warning bg-opacity-10 text-warning px-2 py-1 rounded-pill">
+                                    ⚡ Express
+                                </span>
+                            @else
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1 rounded-pill">
+                                    🛡 Standard
+                                </span>
+                            @endif
+                        </td>
+
+                        {{-- Prix --}}
+                        <td>
+                            <div class="fw-semibold">
+                                {{ number_format($demande->prix_total ?? 0, 0, ',', ' ') }}
+                            </div>
+                            <small class="text-muted">Ar</small>
+                        </td>
+
+                        {{-- Statut --}}
+                        <td>
+                            @if($demande->statut === 'acceptée' || $demande->statut === 'acceptee')
+                                <span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill">
+                                    <i class="bi bi-check-circle"></i> Acceptée
+                                </span>
+                            @elseif($demande->statut === 'refusée' || $demande->statut === 'refusee')
+                                <span class="badge bg-danger bg-opacity-10 text-danger px-2 py-1 rounded-pill">
+                                    <i class="bi bi-x-circle"></i> Refusée
+                                </span>
+                            @else
+                                <span class="badge bg-warning bg-opacity-10 text-warning px-2 py-1 rounded-pill">
+                                    <i class="bi bi-hourglass-split"></i> En attente
+                                </span>
+                            @endif
+                        </td>
+
+                        {{-- Date --}}
+                        <td>
+                            <div>{{ $demande->created_at->format('d/m/Y') }}</div>
+                            <small class="text-muted">{{ $demande->created_at->format('H:i') }}</small>
+                        </td>
+
+                        {{-- Actions (vertical, texte simple) --}}
+                        <td class="text-end pe-3" style="min-width: 100px;">
+                            <div class="d-flex flex-column gap-1 align-items-end">
+
+                                {{-- Voir --}}
+                                <a href="{{ route('super-admin.demandes.show', $demande->id_demande ?? $demande->id) }}"
+                                   class="btn btn-sm btn-link text-decoration-none p-0"
+                                   style="font-size: 12px; color: #374151;">
+                                    Voir
+                                </a>
+
+                                @if($demande->statut === 'en_attente')
+                                    {{-- Accepter --}}
+                                    <button type="button"
+                                            class="btn btn-sm btn-link text-decoration-none p-0"
+                                            style="font-size: 12px; color: #374151;"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalAction"
+                                            data-id="{{ $demande->id_demande ?? $demande->id }}"
+                                            data-reference="{{ $demande->reference }}"
+                                            data-action="accepter">
+                                        Accepter
+                                    </button>
+
+                                    {{-- Refuser --}}
+                                    <button type="button"
+                                            class="btn btn-sm btn-link text-decoration-none p-0"
+                                            style="font-size: 12px; color: #374151;"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalAction"
+                                            data-id="{{ $demande->id_demande ?? $demande->id }}"
+                                            data-reference="{{ $demande->reference }}"
+                                            data-action="refuser">
+                                        Refuser
+                                    </button>
+                                @endif
+
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Aucune demande pour le moment
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    {{-- ✅ Pagination corrigée --}}
+    @if(method_exists($demandes, 'hasPages') && $demandes->hasPages())
+        <div class="mt-3 d-flex justify-content-center">
+            {{ $demandes->links('pagination::bootstrap-5') }}
+        </div>
+    @endif
+</div>
+
+{{-- ═══════════ MODAL ACTION ═══════════ --}}
+<div class="modal fade" id="modalAction" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="" id="formAction">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="statut" id="inputStatut">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitre">Confirmer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p id="modalMessage" class="mb-3"></p>
+
+                    <label for="commentaire_admin" class="form-label small fw-bold">
+                        Commentaire (optionnel)
+                    </label>
+                    <textarea name="commentaire_admin"
+                              id="commentaire_admin"
+                              class="form-control"
+                              rows="4"
+                              placeholder="Ex: Documents manquants / Demande validée."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary" id="btnConfirmer">Confirmer</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+{{-- ═══════════ SCRIPT ═══════════ --}}
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modalAction = document.getElementById('modalAction');
+
+    modalAction.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const id = button.getAttribute('data-id');
+        const reference = button.getAttribute('data-reference');
+        const action = button.getAttribute('data-action');
+
+        document.getElementById('formAction').action = `/super-admin/demandes/${id}`;
+        document.getElementById('commentaire_admin').value = '';
+
+        const titre = document.getElementById('modalTitre');
+        const message = document.getElementById('modalMessage');
+        const inputStatut = document.getElementById('inputStatut');
+        const btnConfirmer = document.getElementById('btnConfirmer');
+
+        if (action === 'accepter') {
+            titre.innerHTML = '<i class="bi bi-check-circle text-success"></i> Accepter la demande';
+            message.innerHTML = `Voulez-vous <strong class="text-success">accepter</strong> la demande <strong>${reference}</strong> ?<br><small class="text-muted">Un PDF sera généré et le citoyen sera notifié.</small>`;
+            inputStatut.value = 'acceptée';
+            btnConfirmer.className = 'btn btn-success';
+            btnConfirmer.innerHTML = '<i class="bi bi-check-circle"></i> Confirmer l\'acceptation';
+        } else {
+            titre.innerHTML = '<i class="bi bi-x-circle text-danger"></i> Refuser la demande';
+            message.innerHTML = `Voulez-vous <strong class="text-danger">refuser</strong> la demande <strong>${reference}</strong> ?<br><small class="text-muted">Le citoyen sera notifié du refus.</small>`;
+            inputStatut.value = 'refusée';
+            btnConfirmer.className = 'btn btn-danger';
+            btnConfirmer.innerHTML = '<i class="bi bi-x-circle"></i> Confirmer le refus';
+        }
+    });
+});
+</script>
+@endpush
+
 @endsection
