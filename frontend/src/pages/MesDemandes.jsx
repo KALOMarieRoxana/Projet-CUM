@@ -235,6 +235,7 @@ export default function MesDemandes() {
             { icon: Home, label: 'Tableau de bord', actif: false, lien: '/tableau-de-bord' },
             { icon: FileText, label: 'Mes demandes', actif: true, lien: '/mes-demandes' },
             { icon: Plus, label: 'Nouvelle demande', actif: false, lien: '/nouvelle-demande' },
+            { icon: Download, label: 'Mes téléchargements', actif: false, lien: '/mes-telechargements' },
           ].map(({ icon: Icon, label, actif, lien }) => (
             <Link key={label} to={lien} style={{ textDecoration: 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, marginBottom: 4, background: actif ? colors.primaryLight : 'transparent', color: actif ? colors.primary : colors.textSecondary, fontWeight: actif ? 600 : 400 }}>

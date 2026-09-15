@@ -260,6 +260,7 @@ export default function Dashboard() {
             { icon: Home, label: 'Tableau de bord', actif: true, lien: '/tableau-de-bord' },
             { icon: FileText, label: 'Mes demandes', actif: false, lien: '/mes-demandes' },
             { icon: Plus, label: 'Nouvelle demande', actif: false, lien: '/nouvelle-demande' },
+            { icon: Download, label: 'Mes téléchargements', actif: false, lien: '/mes-telechargements' },
           ].map(({ icon: Icon, label, actif, lien }) => (
             <Link key={label} to={lien} style={{ textDecoration: 'none' }}>
               <div style={{

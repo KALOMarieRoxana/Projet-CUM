@@ -7,7 +7,7 @@ import {
   FileText, Clock, CheckCircle, LogOut, Plus,
   User, Bell, ChevronDown, UserCircle, Key, ChevronRight,
   Zap, AlertCircle, Home, ArrowLeft, Send, Trash2, ShoppingCart,
-  Heart, Users, HeartPulse, Scale, Globe
+  Heart, Users, HeartPulse, Scale, Globe, Download
 } from 'lucide-react';
 import logo from '../assets/image/logo.png';
 
@@ -461,8 +461,9 @@ export default function NouvelleDemande() {
         <nav style={{ flex: 1, padding: '16px 12px' }}>
           {[
             { icon: Home, label: 'Tableau de bord', actif: false, lien: '/tableau-de-bord' },
-            { icon: FileText, label: 'Mes demandes', actif: false, lien: '/tableau-de-bord' },
+            { icon: FileText, label: 'Mes demandes', actif: false, lien: '/mes-demandes' },
             { icon: Plus, label: 'Nouvelle demande', actif: true, lien: '/nouvelle-demande' },
+            { icon: Download, label: 'Mes téléchargements', actif: false, lien: '/mes-telechargements' },
           ].map(({ icon: Icon, label, actif, lien }) => (
             <Link key={label} to={lien} style={{ textDecoration: 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, marginBottom: 4, background: actif ? 'rgba(99,102,241,0.08)' : 'transparent', color: actif ? '#4F46E5' : '#6B7280', fontWeight: actif ? 600 : 400 }}>

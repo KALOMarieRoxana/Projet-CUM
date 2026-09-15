@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import MesDemandes from './pages/MesDemandes'; 
 import NouvelleDemande from './pages/NouvelleDemande';
+import MesTelechargements from './pages/MesTelechargements';
 import AdminDemandes from './pages/AdminDemandes';
 import Home from './pages/Home';
 import Information from './pages/Information';
@@ -24,6 +25,7 @@ function AppRoutes() {
       <Route path="/tableau-de-bord" element={<RouteProtegee><Dashboard /></RouteProtegee>} />
       <Route path="/mes-demandes" element={<RouteProtegee><MesDemandes /></RouteProtegee>} />
       <Route path="/nouvelle-demande" element={<RouteProtegee><NouvelleDemande /></RouteProtegee>} />
+      <Route path="/mes-telechargements" element={<MesTelechargements />} />
       <Route path="/admin/demandes" element={<RouteProtegee><AdminDemandes /></RouteProtegee>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
