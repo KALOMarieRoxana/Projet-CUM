@@ -382,6 +382,14 @@ export default function NouvelleDemande() {
       })
     };
 
+     // ✅✅✅ AJOUTER CE LOG ICI ✅✅✅
+    console.log('📤 PAYLOAD COMPLET:', JSON.stringify(payload, null, 2));
+    console.log('📋 Suppléments envoyés:', payload.demandes.map(d => ({
+        type_acte_id: d.type_acte_id,
+        supplement_id: d.supplement_id,
+        quantite_supplement: d.quantite_supplement
+    })));
+
     try {
       setProgression('📤 Envoi de la demande...');
       const response = await api.post('/demandes/groupe', payload);

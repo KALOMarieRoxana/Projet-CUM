@@ -167,7 +167,47 @@ class DemandeController extends Controller
                     $prixUnitaire = $typeActe->calculerPrix($langue, $service);
 
                     $quantite = $item['quantite'] ?? $item['nbre_com'] ?? 1;
-                    $sousTotal = $prixUnitaire * $quantite;
+
+                    // ✅ Récupérer le supplément
+                    $supplementId = $item['supplement_id'] ?? null;
+                    $quantiteSupplement = intval($item['quantite_supplement'] ?? 0);
+                    $prixActe = floatval($item['prix_acte'] ?? 0);
+                    if ($prixActe <= 0) {
+                        $prixActe = floatval($prixUnitaire);
+                    }
+                    $prixSupplement = 0;
+
+                    // Calculer le prix du suplement si sélectionné
+                    if ($supplementId) {
+                        $supplement = \App\Models\TypeActeSupplement::find($supplementId);
+                        if ($supplement) {
+                            $serviceLower = strtolower($service);
+                            $langueLower = strtolower($langue);
+
+                            $champPrix = "prix_{$serviceLower}_{$langueLower}";
+                            $prixSupplement = floatval($supplement->$champPrix ?? 0);
+
+                              // ✅ Debug
+                            \Log::info('Calcul prix supplément:', [
+                                'supplement_id' => $supplementId,
+                                'champ' => $champPrix,
+                                'valeur' => $supplement->$champPrix,
+                                'prixSupplement' => $prixSupplement,
+                            ]);
+                        }
+                    }
+                    // Sous total = (prix acte * qté) + (prix supplément * qt supplément)
+                    $sousTotal = ($prixActe * $quantite) + ($prixSupplement * $quantiteSupplement);
+
+                     // ✅ Log pour vérifier
+                    \Log::info('📊 Calcul ligne:', [
+                        'type_acte' => $typeActeNom,
+                        'prixActe' => $prixActe,
+                        'quantite' => $quantite,
+                        'prixSupplement' => $prixSupplement,
+                        'quantiteSupplement' => $quantiteSupplement,
+                        'sousTotal' => $sousTotal,
+                    ]);
 
                     // Champs communs insérés dans les tables spécifiques d'actes
                     $commonData = [
@@ -255,9 +295,14 @@ class DemandeController extends Controller
                         DemandeActe::create([
                             'demande_id'    => $demande->id_demande ?? $demande->id,
                             'type_acte_id'  => $typeActe->id,
+                            'supplement_id'       => $supplementId, 
                             'acte_type'     => get_class($acteModel),
                             'acte_id'       => $acteModel->getKey(),
-                            'prix_unitaire' => $prixUnitaire,
+                            'langue'        => $langue,
+                            'prix_acte'           => $prixActe,
+                            'prix_supplement'     => $prixSupplement,
+                            'prix_unitaire' => $prixActe + $prixSupplement,
+                            'quantite_supplement' => $quantiteSupplement,
                             'quantite'      => $quantite,
                             'sous_total'    => $sousTotal,
                             'statut'        => 'en_attente',

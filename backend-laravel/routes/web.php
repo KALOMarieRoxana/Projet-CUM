@@ -95,7 +95,12 @@ Route::middleware(['auth', 'role:admin'])
         Route::post('/demandes/{id}/traiter', [DemandeController::class, 'traiter'])->name('demandes.traiter');
         Route::post('/demandes/items/{id}/traiter', [DemandeController::class, 'traiterItem'])->name('demandes.traiter-item');
         Route::get('/demandes/details/{type}/{id}', [DemandeController::class, 'detailsActe'])->name('demandes.details');
-
+        Route::get('/types-actes', [TypeActeController::class, 'index'])->name('types-actes.index');
+        Route::put('/types-actes/{id}', [TypeActeController::class, 'update'])->name('types-actes.update');
+        Route::get('/types-actes', function() {
+            $types = \App\Models\TypeActe::all();
+            return view('admin.types-actes', compact('types'));
+        })->name('types-actes.index');
     });
 
 // =============================

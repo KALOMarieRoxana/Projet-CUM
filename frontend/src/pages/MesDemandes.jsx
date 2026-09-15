@@ -153,11 +153,30 @@ export default function MesDemandes() {
     setDemandeSelectionnee(null);
   };
 
+  // ✅ CALCUL TOTAL avec suppléments
   const calculerTotalDemande = (demande) => {
     const actes = demande.demande_actes || demande.demandeActes || [];
     if (actes.length === 0) return 0;
     return actes.reduce((sum, item) => {
-      return sum + (parseFloat(item.prix_unitaire || 0) * (item.quantite || 1));
+      const prixActe = parseFloat(item.prix_acte || item.prix_unitaire || 0);
+      const prixSupp = parseFloat(item.prix_supplement || 0);
+      const qteActe = parseInt(item.quantite || 1);
+      const qteSupp = item.supplement_id ? parseInt(item.quantite_supplement || 0) : 0;
+
+      const sousTotalActe = prixActe * qteActe;
+      const sousTotalSupp = item.supplement_id ? prixSupp * qteSupp : 0;
+
+      return sum + sousTotalActe + sousTotalSupp;
+    }, 0);
+  };
+
+  // ✅ COMPTER actes + suppléments
+  const compterTotalItems = (demande) => {
+    const actes = demande.demande_actes || demande.demandeActes || [];
+    return actes.reduce((sum, item) => {
+      const qteActe = parseInt(item.quantite || 1);
+      const qteSupp = item.supplement_id ? parseInt(item.quantite_supplement || 0) : 0;
+      return sum + qteActe + qteSupp;
     }, 0);
   };
 
@@ -177,6 +196,15 @@ export default function MesDemandes() {
            LABELS_TYPE[slug] ||
            slug ||
            'Acte inconnu';
+  };
+
+  // ✅ Helper : récupérer le nom du supplément
+  const getNomSupplement = (item) => {
+    if (!item) return null;
+    if (item.supplement) {
+      return item.supplement.nom || item.supplement.libelle || null;
+    }
+    return item.supplement_nom || null;
   };
 
   if (chargement) {
@@ -360,12 +388,13 @@ export default function MesDemandes() {
                   const statutInfo = STATUTS[demande.statut] || { label: demande.statut, color: colors.textSecondary, bg: colors.input };
                   const totalDemande = calculerTotalDemande(demande);
                   const actes = demande.demande_actes || demande.demandeActes || [];
-                  const nbActes = actes.reduce((sum, d) => sum + (d.quantite || 1), 0);
+                  const nbActes = compterTotalItems(demande);
 
                   return (
                     <div key={demande.id_demande || demande.id} style={{ background: colors.card, borderRadius: 12, border: `1px solid ${colors.cardBorder}`, padding: 16 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div style={{ flex: 1 }}>
+                          {/* Référence + Statut + Date */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                             <span style={{ fontSize: 14, fontWeight: 700, color: colors.text }}>
                               {demande.reference || `DEM-${demande.id_demande}`}
@@ -378,7 +407,8 @@ export default function MesDemandes() {
                             </span>
                           </div>
 
-                          <div style={{ display: 'flex', gap: 24, fontSize: 13, color: colors.textSecondary, flexWrap: 'wrap' }}>
+                          {/* Demandeur + Concerné + Total */}
+                          <div style={{ display: 'flex', gap: 24, fontSize: 13, color: colors.textSecondary, flexWrap: 'wrap', marginBottom: 8 }}>
                             <div>
                               <span style={{ fontWeight: 500 }}>Demandeur :</span> {demande.demandeur_prenom} {demande.demandeur_nom}
                             </div>
@@ -386,7 +416,7 @@ export default function MesDemandes() {
                               <span style={{ fontWeight: 500 }}>Concerné :</span> {demande.personne_prenom} {demande.personne_nom}
                             </div>
                             <div>
-                              <span style={{ fontWeight: 500 }}>Actes :</span> {nbActes}
+                              <span style={{ fontWeight: 500 }}>Total actes + docs :</span> {nbActes}
                             </div>
                             <div>
                               <span style={{ fontWeight: 500 }}>Total :</span>
@@ -395,11 +425,106 @@ export default function MesDemandes() {
                               </span>
                             </div>
                           </div>
+
+                          {/* ✅ DÉTAIL DES ACTES (avec ou sans sous-type) */}
+                          {actes.length > 0 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+                              {actes.map((a, idx) => {
+                                const nomType = getNomTypeActe(a);
+                                const nomSupp = getNomSupplement(a);
+                                const langue = (a.langue || 'FR').toUpperCase();
+                                const qteActe = parseInt(a.quantite || 1);
+                                const qteSupp = a.supplement_id ? parseInt(a.quantite_supplement || 0) : 0;
+                                const prixActe = parseFloat(a.prix_acte || 0);
+                                const prixSupp = parseFloat(a.prix_supplement || 0);
+
+                                const sousTotalActe = prixActe * qteActe;
+                                const sousTotalSupp = a.supplement_id ? prixSupp * qteSupp : 0;
+                                const totalLigne = sousTotalActe + sousTotalSupp;
+                                const aSupplement = a.supplement_id && nomSupp;
+
+                                return (
+                                  <div
+                                    key={idx}
+                                    style={{
+                                      padding: '8px 12px',
+                                      background: colors.input,
+                                      borderRadius: 6,
+                                      fontSize: 12
+                                    }}
+                                  >
+                                    {/* 📄 LIGNE 1 : TYPE ACTE */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                      <span style={{ fontWeight: 600, color: colors.text }}>
+                                        📄 {nomType}
+                                      </span>
+                                      <span style={{ color: colors.textMuted }}>
+                                        ({langue})
+                                      </span>
+                                      <span style={{
+                                        padding: '2px 7px',
+                                        borderRadius: 10,
+                                        background: '#FEF3C7',
+                                        color: '#92400E',
+                                        fontSize: 10,
+                                        fontWeight: 600
+                                      }}>
+                                        × {qteActe}
+                                      </span>
+                                      <span style={{ marginLeft: 'auto', color: colors.textSecondary, fontWeight: 600 }}>
+                                        {new Intl.NumberFormat('fr-FR').format(sousTotalActe)} Ar
+                                      </span>
+                                    </div>
+
+                                    {/* 📋 LIGNE 2 : SOUS-TYPE (si présent) */}
+                                    {aSupplement && (
+                                      <>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 16, marginTop: 4 }}>
+                                          <span style={{ fontWeight: 600, color: '#4F46E5' }}>
+                                            📋 {nomSupp}
+                                          </span>
+                                          <span style={{
+                                            padding: '2px 7px',
+                                            borderRadius: 10,
+                                            background: '#DBEAFE',
+                                            color: '#1E40AF',
+                                            fontSize: 10,
+                                            fontWeight: 600
+                                          }}>
+                                            × {qteSupp}
+                                          </span>
+                                          <span style={{ marginLeft: 'auto', color: '#4F46E5', fontWeight: 600 }}>
+                                            {new Intl.NumberFormat('fr-FR').format(sousTotalSupp)} Ar
+                                          </span>
+                                        </div>
+
+                                        {/* 💰 LIGNE 3 : TOTAL LIGNE */}
+                                        <div style={{
+                                          display: 'flex',
+                                          justifyContent: 'space-between',
+                                          paddingTop: 6,
+                                          marginTop: 6,
+                                          borderTop: `1px dashed ${colors.cardBorder}`
+                                        }}>
+                                          <span style={{ fontSize: 11, color: colors.textSecondary, fontWeight: 500 }}>
+                                            Total ligne
+                                          </span>
+                                          <span style={{ color: colors.primary, fontWeight: 700, fontSize: 13 }}>
+                                            {new Intl.NumberFormat('fr-FR').format(totalLigne)} Ar
+                                          </span>
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
 
                         <button
                           onClick={() => ouvrirModal(demande)}
-                          style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${colors.cardBorder}`, background: colors.input, color: colors.primary, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                          style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${colors.cardBorder}`, background: colors.input, color: colors.primary, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}
                         >
                           <Eye size={14} /> Détails
                         </button>
@@ -485,46 +610,40 @@ export default function MesDemandes() {
                     <thead>
                       <tr style={{ background: colors.input }}>
                         <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Type d'acte</th>
-                        <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Nom de l'acte</th>
-                        <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Quantité</th>
-                        <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Service</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Sous-type / Document</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Qté acte</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Qté doc</th>
                         <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Langue</th>
-                        <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Prix unitaire</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Prix acte</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Prix doc</th>
                         <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, color: colors.text, borderBottom: `1px solid ${colors.cardBorder}` }}>Sous-total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(demandeSelectionnee.demande_actes || demandeSelectionnee.demandeActes).map((item, index) => {
-                        const slug = getSlugTypeActe(item);
                         const nomActe = getNomTypeActe(item);
-                        const prixUnitaire = parseFloat(item.prix_unitaire || 0);
-                        const quantite = item.quantite || 1;
-                        const sousTotal = prixUnitaire * quantite;
-                        const service = item.type_service || item.service || demandeSelectionnee.service || 'standard';
-                        const langue = (item.langue || 'MG').toUpperCase();
+                        const nomSupp = getNomSupplement(item);
+                        const langue = (item.langue || 'FR').toUpperCase();
+                        const qteActe = parseInt(item.quantite || 1);
+                        const qteSupp = item.supplement_id ? parseInt(item.quantite_supplement || 0) : 0;
+                        const prixActe = parseFloat(item.prix_acte || item.prix_unitaire || 0);
+                        const prixSupp = parseFloat(item.prix_supplement || 0);
+                        const sousTotal = (prixActe * qteActe) + (item.supplement_id ? prixSupp * qteSupp : 0);
+                        const aSupplement = item.supplement_id && nomSupp;
 
                         return (
                           <tr key={index} style={{ borderBottom: index < (demandeSelectionnee.demande_actes || demandeSelectionnee.demandeActes).length - 1 ? `1px solid ${colors.cardBorder}` : 'none' }}>
-                            <td style={{ padding: '10px 12px', color: colors.text, fontWeight: 500, textTransform: 'capitalize' }}>
-                              {slug || '—'}
-                            </td>
                             <td style={{ padding: '10px 12px', color: colors.text, fontWeight: 600 }}>
                               {nomActe}
                             </td>
-                            <td style={{ padding: '10px 12px', textAlign: 'center', color: colors.text, fontWeight: 600 }}>
-                              {quantite}
+                            <td style={{ padding: '10px 12px', color: aSupplement ? '#4F46E5' : colors.textMuted, fontWeight: aSupplement ? 600 : 400 }}>
+                              {aSupplement ? nomSupp : '— Aucun —'}
                             </td>
-                            <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                              <span style={{
-                                padding: '2px 8px',
-                                borderRadius: 10,
-                                fontSize: 11,
-                                fontWeight: 600,
-                                background: service === 'express' ? 'rgba(245,158,11,0.15)' : colors.primaryLight,
-                                color: service === 'express' ? '#D97706' : colors.primary
-                              }}>
-                                {service === 'express' ? '⚡ Express' : '🛡 Standard'}
-                              </span>
+                            <td style={{ padding: '10px 12px', textAlign: 'center', color: colors.text, fontWeight: 600 }}>
+                              {qteActe}
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'center', color: aSupplement ? '#4F46E5' : colors.textMuted, fontWeight: 600 }}>
+                              {aSupplement ? qteSupp : '—'}
                             </td>
                             <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                               <span style={{
@@ -535,11 +654,14 @@ export default function MesDemandes() {
                                 background: langue === 'MG' ? '#FEF3C7' : '#DBEAFE',
                                 color: langue === 'MG' ? '#92400E' : '#1E40AF'
                               }}>
-                                {langue === 'MG' ? '🇲🇬 Malgache' : '🇫🇷 Français'}
+                                {langue === 'MG' ? '🇲🇬 MG' : '🇫🇷 FR'}
                               </span>
                             </td>
-                            <td style={{ padding: '10px 12px', textAlign: 'right', color: colors.textSecondary }}>
-                              {new Intl.NumberFormat('fr-FR').format(prixUnitaire)} Ar
+                            <td style={{ padding: '10px 12px', textAlign: 'right', color: colors.text }}>
+                              {new Intl.NumberFormat('fr-FR').format(prixActe)} Ar
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', color: aSupplement ? '#4F46E5' : colors.textMuted }}>
+                              {aSupplement ? `${new Intl.NumberFormat('fr-FR').format(prixSupp)} Ar` : '—'}
                             </td>
                             <td style={{ padding: '10px 12px', textAlign: 'right', color: colors.primary, fontWeight: 700 }}>
                               {new Intl.NumberFormat('fr-FR').format(sousTotal)} Ar
@@ -550,7 +672,7 @@ export default function MesDemandes() {
                     </tbody>
                     <tfoot>
                       <tr style={{ background: colors.input }}>
-                        <td colSpan={6} style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: colors.text, fontSize: 13 }}>
+                        <td colSpan={7} style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: colors.text, fontSize: 13 }}>
                           TOTAL GÉNÉRAL
                         </td>
                         <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: colors.primary, fontSize: 15 }}>
@@ -574,6 +696,7 @@ export default function MesDemandes() {
                 {(demandeSelectionnee.demande_actes || demandeSelectionnee.demandeActes).map((item, index) => {
                   const slug = getSlugTypeActe(item);
                   const nomActe = getNomTypeActe(item);
+                  const nomSupp = getNomSupplement(item);
                   const details = item.details || {};
                   const detailsAffiches = Object.keys(details)
                     .filter(key => details[key] !== null && details[key] !== undefined && String(details[key]).trim() !== '')
@@ -589,6 +712,11 @@ export default function MesDemandes() {
                     <div key={index} style={{ marginBottom: 12, padding: 12, background: colors.input, borderRadius: 8 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 8 }}>
                         {nomActe}
+                        {nomSupp && (
+                          <span style={{ color: '#4F46E5', marginLeft: 8 }}>
+                            + {nomSupp}
+                          </span>
+                        )}
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px', fontSize: 12, color: colors.textSecondary }}>
                         {detailsAffiches.map((d, i) => (

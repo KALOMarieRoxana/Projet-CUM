@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [mesDemandes, setMesDemandes] = useState([]);
   const [erreur, setErreur] = useState('');
   const [chargement, setChargement] = useState(true);
+  const [typesActes, setTypesActes] = useState([]);
   const [menuProfilOuvert, setMenuProfilOuvert] = useState(false);
   const [modalCompteOuvert, setModalCompteOuvert] = useState(false);
   const [modalChangerMdpOuvert, setModalChangerMdpOuvert] = useState(false);
@@ -56,23 +57,15 @@ export default function Dashboard() {
   const getNomTypeActe = (acte) => {
     if (!acte) return 'Acte';
 
-    // Cas 1 : relation typeActeRelation
-    if (acte.typeActeRelation) {
-      return acte.typeActeRelation.nom
-        || LABELS_TYPE[acte.typeActeRelation.type_acte]
-        || acte.typeActeRelation.type_acte
+    // Cas 1 : relation typeActe
+    if (acte.typeActe) {
+      return acte.typeActe.nom
+        || LABELS_TYPE[acte.typeActe.type_acte]
+        || acte.typeActe.type_acte
         || 'Acte';
     }
 
-    // Cas 2 : relation type_acte_relation (snake_case)
-    if (acte.type_acte_relation) {
-      return acte.type_acte_relation.nom
-        || LABELS_TYPE[acte.type_acte_relation.type_acte]
-        || acte.type_acte_relation.type_acte
-        || 'Acte';
-    }
-
-    // Cas 3 : type_acte est un objet
+    // Cas 2 : type_acte est un objet
     if (acte.type_acte && typeof acte.type_acte === 'object') {
       return acte.type_acte.nom
         || LABELS_TYPE[acte.type_acte.type_acte]
@@ -80,9 +73,25 @@ export default function Dashboard() {
         || 'Acte';
     }
 
-    // Cas 4 : type_acte est une string
+    // Cas 3 : type_acte est une string
     if (typeof acte.type_acte === 'string' && acte.type_acte) {
       return LABELS_TYPE[acte.type_acte] || acte.type_acte;
+    }
+
+    // ✅ Cas 4 : relation typeActeRelation
+    if (acte.typeActeRelation) {
+        return acte.typeActeRelation.nom
+            || LABELS_TYPE[acte.typeActeRelation.type_acte]
+            || acte.typeActeRelation.type_acte
+            || 'Acte';
+    }
+
+     // ✅ Cas 5 : correspondance par type_acte_id
+    if (acte.type_acte_id) {
+      const typeObj = typesActes.find(t => t.id === acte.type_acte_id);
+      if (typeObj) {
+        return typeObj.nom || LABELS_TYPE[typeObj.type_acte] || typeObj.type_acte;
+      }
     }
 
     return 'Acte';
@@ -133,7 +142,8 @@ export default function Dashboard() {
       setChargement(true);
       const [resProfil, resDemandes] = await Promise.all([
         api.get('/auth/profil'),
-        api.get('/demandes/mes-demandes')
+        api.get('/demandes/mes-demandes'),
+        api.get('/types-actes')
       ]);
       setProfilDetaille(resProfil.data.utilisateur);
       const demandes = resDemandes.data.demandes || [];
@@ -144,6 +154,7 @@ export default function Dashboard() {
         const premierActe = demandes[0]?.demande_actes?.[0] || demandes[0]?.demandeActes?.[0];
         console.log('🔍 Structure du premier acte :', premierActe);
         console.log('🔍 supplement :', premierActe?.supplement);
+        console.log('🔍 typeActe :', premierActe?.typeActe);
       }
     } catch (err) {
       setErreur('Impossible de charger vos données.');
