@@ -9,7 +9,7 @@ import {
   FileText, Clock, CheckCircle, XCircle, LogOut, Plus,
   Phone, MapPin, Mail, Bell, ChevronRight,
   Zap, Shield, AlertCircle, Home, ChevronDown,
-  UserCircle, Award, Key, X, Eye, EyeOff, Download
+  UserCircle, Award, Key, X, Eye, EyeOff, Download, BarChart3
 } from 'lucide-react';
 import logo from '../assets/image/logo.png';
 
@@ -40,7 +40,7 @@ export default function Dashboard() {
   const modalRef = useRef(null);
 
   const COULEURS_STATUT = {
-    'en attente': { bg: '#FEF3C7', texte: '#92400E', border: '#F59E0B', icon: Clock },
+    'en_attente': { bg: '#FEF3C7', texte: '#92400E', border: '#F59E0B', icon: Clock },
     'acceptée':   { bg: '#D1FAE5', texte: '#065F46', border: '#10B981', icon: CheckCircle },
     'refusée':    { bg: '#FEE2E2', texte: '#991B1B', border: '#EF4444', icon: XCircle },
   };
@@ -234,7 +234,7 @@ export default function Dashboard() {
 
   const totalDemandes = mesDemandes.length;
   const demandesAcceptees = mesDemandes.filter(d => d.statut === 'acceptée').length;
-  const demandesEnAttente = mesDemandes.filter(d => d.statut === 'en attente').length;
+  const demandesEnAttente = mesDemandes.filter(d => d.statut === 'en_attente').length;
   const demandesRefusees = mesDemandes.filter(d => d.statut === 'refusée').length;
   const notifications = mesDemandes.filter(d =>
     d.statut === 'acceptée' && d.pdf_path && !d.notification_lue
@@ -260,6 +260,7 @@ export default function Dashboard() {
             { icon: Home, label: 'Tableau de bord', actif: true, lien: '/tableau-de-bord' },
             { icon: FileText, label: 'Mes demandes', actif: false, lien: '/mes-demandes' },
             { icon: Plus, label: 'Nouvelle demande', actif: false, lien: '/nouvelle-demande' },
+            { icon: BarChart3, label: 'Statistiques', actif: false, lien: '/statistiques' },
             { icon: Download, label: 'Mes téléchargements', actif: false, lien: '/mes-telechargements' },
           ].map(({ icon: Icon, label, actif, lien }) => (
             <Link key={label} to={lien} style={{ textDecoration: 'none' }}>
@@ -425,7 +426,7 @@ export default function Dashboard() {
           ) : (
             <div>
               {mesDemandes.map((d, index) => {
-                const config = COULEURS_STATUT[d.statut] || COULEURS_STATUT['en attente'];
+                const config = COULEURS_STATUT[d.statut] || COULEURS_STATUT['en_attente'];
                 const IconStatut = config.icon;
 
                 const actes = d.demande_actes || d.demandeActes || [];

@@ -7,7 +7,7 @@ import {
   FileText, Clock, CheckCircle, LogOut, Plus,
   User, Bell, ChevronDown, UserCircle, Key, ChevronRight,
   Zap, AlertCircle, Home, ArrowLeft, Send, Trash2, ShoppingCart,
-  Heart, Users, HeartPulse, Scale, Globe, Download
+  Heart, Users, HeartPulse, Scale, Globe, Download, BarChart3
 } from 'lucide-react';
 import logo from '../assets/image/logo.png';
 
@@ -94,7 +94,6 @@ export default function NouvelleDemande() {
   const [progression, setProgression] = useState('');
   const [typesActes, setTypesActes] = useState([]);
 
-  // ✅ States pour le modal d'estimation
   const [modalEstimation, setModalEstimation] = useState(false);
   const [demandeEstimee, setDemandeEstimee] = useState(null);
 
@@ -270,11 +269,6 @@ export default function NouvelleDemande() {
       return;
     }
 
-    if (supplementsDisponibles.length > 0 && !selectionActe.supplement_id) {
-      setErreur('Veuillez sélectionner un type de document.');
-      return;
-    }
-
     setActesAjoutes(prev => {
       const indexExistant = prev.findIndex(
         a => a.type_acte === selectionActe.type_acte
@@ -289,7 +283,12 @@ export default function NouvelleDemande() {
         }
         return copy;
       }
-      return [...prev, { ...selectionActe, details: { ...detailsActe } }];
+      // ✅ LIGNE CORRIGÉE
+      return [...prev, { 
+        ...selectionActe, 
+        details: { ...detailsActe }, 
+        id_unique: `${selectionActe.type_acte}_${selectionActe.langue}_${selectionActe.supplement_id}_${Date.now()}` 
+      }];
     });
 
     const champsReset = CHAMPS_SPECIFIQUES[selectionActe.type_acte] || [];
@@ -298,6 +297,14 @@ export default function NouvelleDemande() {
       initialDetails[champ.name] = '';
     });
     setDetailsActe(initialDetails);
+
+    setSelectionActe(prev => ({
+      ...prev,
+      supplement_id: null,
+      quantite: 1,
+      quantite_supplement: 1,
+    }));
+
     setErreur('');
   };
 
@@ -396,12 +403,10 @@ export default function NouvelleDemande() {
       setProgression('');
       setSucces(`Demande envoyée avec succès ! Référence : ${response.data.reference}`);
       
-      // ✅ Calculer la date d'estimation selon le service
       const delaiHeures = form.service === 'express' ? 24 : 72;
       const now = new Date();
       const dateEstimation = new Date(now.getTime() + delaiHeures * 60 * 60 * 1000);
       
-      // ✅ Préparer les données pour le modal
       setDemandeEstimee({
         reference: response.data.reference,
         service: form.service,
@@ -411,7 +416,6 @@ export default function NouvelleDemande() {
         prix_total: response.data.prix_total,
       });
       
-      // ✅ Afficher le modal d'estimation
       setModalEstimation(true);
       
     } catch (err) {
@@ -463,6 +467,7 @@ export default function NouvelleDemande() {
             { icon: Home, label: 'Tableau de bord', actif: false, lien: '/tableau-de-bord' },
             { icon: FileText, label: 'Mes demandes', actif: false, lien: '/mes-demandes' },
             { icon: Plus, label: 'Nouvelle demande', actif: true, lien: '/nouvelle-demande' },
+            { icon: BarChart3, label: 'Statistiques', actif: false, lien: '/statistiques' },
             { icon: Download, label: 'Mes téléchargements', actif: false, lien: '/mes-telechargements' },
           ].map(({ icon: Icon, label, actif, lien }) => (
             <Link key={label} to={lien} style={{ textDecoration: 'none' }}>
@@ -917,15 +922,7 @@ export default function NouvelleDemande() {
             navigate('/tableau-de-bord');
           }}
           onStatutChange={(demandeMiseAJour) => {
-            // ✅ Callback quand le statut change
             console.log('🎉 Statut mis à jour:', demandeMiseAJour.statut);
-
-            // Afficher un message avant redirection
-            const message = demandeMiseAJour.statut === 'acceptée'
-              ? '✅ Votre demande a été acceptée !'
-              : '❌ Votre demande a été refusée.';
-             // Optionnel : afficher une alerte
-            // alert(message);
           }}
         />
       )}
