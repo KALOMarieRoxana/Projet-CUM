@@ -22,6 +22,17 @@ export default function NotificationBell() {
     if (ouvert) chargerNotifications();
   }, [ouvert]);
 
+  // ✅ NOUVEAU : Recharger les notifications si le panneau est ouvert
+  useEffect(() => {
+    if (!ouvert) return;
+  
+    // Rafraîchir toutes les 10 secondes quand le panneau est ouvert
+    const interval = setInterval(() => {
+        chargerNotifications();
+    }, 10000);
+     return () => clearInterval(interval);
+  }, [ouvert]);
+  
   // Fermer au clic extérieur
   useEffect(() => {
     const handleClick = (e) => {
