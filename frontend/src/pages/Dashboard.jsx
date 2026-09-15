@@ -548,7 +548,7 @@ export default function Dashboard() {
                           marginLeft: 8
                         }}
                       >
-                        <Download size={14} /> PDF
+                        <Download size={14} /> Télécharger PDF
                       </a>
                     )}
 

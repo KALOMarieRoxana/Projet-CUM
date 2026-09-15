@@ -52,6 +52,9 @@ class DemandeController extends Controller
         ]);
 
         $demande = Demande::findOrFail($id);
+
+        // ✅ AJOUTER CETTE LIGNE :
+        $ancienStatut = $demande->statut;
         
         $demande->update([
             'statut'            => $request->statut,
@@ -60,6 +63,39 @@ class DemandeController extends Controller
             'date_traitement'   => now(),
         ]);
 
+        // ✅ GÉNÉRER LE PDF SI ACCEPTÉE
+        if ($request->statut === 'acceptée' && $ancienStatut !== 'acceptée') {
+            try {
+                $pdfService = new \App\Services\PdfService();
+                $filename = $pdfService->genererPdf($demande);
+            
+                \Log::info('✅ PDF généré:', [
+                    'reference' => $demande->reference,
+                    'filename' => $filename,
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('❌ Erreur génération PDF: ' . $e->getMessage());
+            }
+        }
+
+        // ✅ 2. ENVOYER LA NOTIFICATION AU CITOYEN
+        try {
+            $citoyen = $demande->citoyen;
+        
+            if ($citoyen) {
+                if ($request->statut === 'acceptée') {
+                    $citoyen->notify(new \App\Notifications\DemandeAccepteeNotification($demande->fresh()));
+                    \Log::info('📤 Notification ACCEPTÉE envoyée: ' . $demande->reference);
+                } elseif ($request->statut === 'refusée') {
+                    $citoyen->notify(new \App\Notifications\DemandeRefuseeNotification($demande->fresh()));
+                    \Log::info('📤 Notification REFUSÉE envoyée: ' . $demande->reference);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('❌ Erreur notification: ' . $e->getMessage());
+        }
+
+        
         if ($request->wantsJson()) {
             return response()->json([
                 'message' => 'Statut mis à jour avec succès.',
@@ -318,6 +354,27 @@ class DemandeController extends Controller
                     'prix_total'   => $prixTotalGlobal,
                     'nombre_actes' => $totalNombreActes,
                 ]);
+                
+                // ============================================================
+                // 5️⃣ CALCUL DE L'ESTIMATION (AJOUTER ICI)
+                // Express = 24h, Standard = 72h
+                // ============================================================
+                $delaiHeures = $request->service === 'express' ? 24 : 72;
+                $dateEstimation = now()->addHours($delaiHeures);
+
+                $demande->update([
+                    'prix_total'          => $prixTotalGlobal,
+                    'nombre_actes'        => $totalNombreActes,
+                    'delai_heures'        => $delaiHeures,
+                    'date_estimation'     => $dateEstimation,
+                    'estimation_envoyee'  => false,
+                ]);
+                \Log::info('📅 Estimation programmée:', [
+                    'reference'       => $demande->reference,
+                    'service'         => $request->service,
+                    'delai_heures'    => $delaiHeures,
+                    'date_estimation' => $dateEstimation->toDateTimeString(),
+                ]);
 
                 return response()->json([
                     'message' => 'Demande enregistrée avec succès.',
@@ -405,6 +462,35 @@ class DemandeController extends Controller
                 return response()->json(['message' => 'Demande non trouvée.'], 404);
             }
             return redirect()->back()->with('error', 'Demande non trouvée.');
+        }
+    }
+
+    public function verifierStatut($reference)
+    {
+        try {
+            $citoyen = Auth::guard('citoyen')->user();
+        
+            if (!$citoyen) {
+                return response()->json(['success' => false], 401);
+            }
+
+            $demande = Demande::where('citoyen_id', $citoyen->id_citoyens)
+                ->where('reference', $reference)
+                ->select('id_demande', 'reference', 'statut', 'date_traitement')
+                ->first();
+
+            if (!$demande) {
+                return response()->json(['success' => false, 'message' => 'Demande non trouvée'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'statut' => $demande->statut,
+                'date_traitement' => $demande->date_traitement,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['success' => false], 500);
         }
     }
 

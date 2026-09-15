@@ -36,6 +36,7 @@ Route::middleware(CorsLocal::class)->group(function () {
     
         // Vous avez probablement aussi cette route GET (ce qui explique pourquoi GET est supporté)
         Route::get('/demandes/groupe', [DemandeController::class, 'index']);
+        Route::get('/demandes/{reference}/statut', [DemandeController::class, 'verifierStatut']);
         // --- ✅ NOTIFICATIONS (AJOUTÉ) ---
         Route::get('/notifications/compteur', [NotificationController::class, 'compteur']);
         Route::get('/notifications', [NotificationController::class, 'index']);

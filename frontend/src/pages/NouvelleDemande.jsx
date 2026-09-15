@@ -2,6 +2,7 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axiosConfig';
+import ModalEstimation from '../components/ModalEstimation';
 import {
   FileText, Clock, CheckCircle, LogOut, Plus,
   User, Bell, ChevronDown, UserCircle, Key, ChevronRight,
@@ -92,6 +93,10 @@ export default function NouvelleDemande() {
   const [succes, setSucces] = useState('');
   const [progression, setProgression] = useState('');
   const [typesActes, setTypesActes] = useState([]);
+
+  // ✅ States pour le modal d'estimation
+  const [modalEstimation, setModalEstimation] = useState(false);
+  const [demandeEstimee, setDemandeEstimee] = useState(null);
 
   const [menuProfilOuvert, setMenuProfilOuvert] = useState(false);
   const menuRef = useRef(null);
@@ -382,13 +387,7 @@ export default function NouvelleDemande() {
       })
     };
 
-     // ✅✅✅ AJOUTER CE LOG ICI ✅✅✅
     console.log('📤 PAYLOAD COMPLET:', JSON.stringify(payload, null, 2));
-    console.log('📋 Suppléments envoyés:', payload.demandes.map(d => ({
-        type_acte_id: d.type_acte_id,
-        supplement_id: d.supplement_id,
-        quantite_supplement: d.quantite_supplement
-    })));
 
     try {
       setProgression('📤 Envoi de la demande...');
@@ -396,7 +395,25 @@ export default function NouvelleDemande() {
 
       setProgression('');
       setSucces(`Demande envoyée avec succès ! Référence : ${response.data.reference}`);
-      setTimeout(() => navigate('/tableau-de-bord'), 4000);
+      
+      // ✅ Calculer la date d'estimation selon le service
+      const delaiHeures = form.service === 'express' ? 24 : 72;
+      const now = new Date();
+      const dateEstimation = new Date(now.getTime() + delaiHeures * 60 * 60 * 1000);
+      
+      // ✅ Préparer les données pour le modal
+      setDemandeEstimee({
+        reference: response.data.reference,
+        service: form.service,
+        delai_heures: delaiHeures,
+        created_at: now.toISOString(),
+        date_estimation: dateEstimation.toISOString(),
+        prix_total: response.data.prix_total,
+      });
+      
+      // ✅ Afficher le modal d'estimation
+      setModalEstimation(true);
+      
     } catch (err) {
       console.error('Erreur complète:', err);
       console.error('Payload envoyé:', payload);
@@ -551,7 +568,7 @@ export default function NouvelleDemande() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <label style={{ padding: 16, borderRadius: 10, border: form.service === 'standard' ? '2px solid #6366F1' : '1px solid #E5E7EB', background: form.service === 'standard' ? '#EEF2FF' : '#FFF', cursor: 'pointer' }}>
                 <input type="radio" name="service" value="standard" checked={form.service === 'standard'} onChange={handleChange} style={{ accentColor: '#6366F1' }} />
-                <span style={{ marginLeft: 8, fontWeight: 600 }}>Service Standard (48h-72h)</span>
+                <span style={{ marginLeft: 8, fontWeight: 600 }}>Service Standard (72h)</span>
               </label>
               <label style={{ padding: 16, borderRadius: 10, border: form.service === 'express' ? '2px solid #6366F1' : '1px solid #E5E7EB', background: form.service === 'express' ? '#EEF2FF' : '#FFF', cursor: 'pointer' }}>
                 <input type="radio" name="service" value="express" checked={form.service === 'express'} onChange={handleChange} style={{ accentColor: '#6366F1' }} />
@@ -762,7 +779,6 @@ export default function NouvelleDemande() {
                               <span style={{ fontSize: 12, color: '#6B7280', fontWeight: 400 }}> ({nomLangue})</span>
                             </div>
 
-                            {/* DÉTAIL DES PRIX */}
                             <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.7 }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 400 }}>
                                 <span>📄 {LABELS_TYPE[item.type_acte]}</span>
@@ -778,9 +794,7 @@ export default function NouvelleDemande() {
                           </div>
                         </div>
 
-                        {/* ✅ INPUTS DE QUANTITÉ + TOTAL + SUPPRIMER */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                          {/* Qté acte */}
                           <div style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: 10, color: '#6B7280', marginBottom: 2 }}>Qté acte</div>
                             <input
@@ -792,7 +806,6 @@ export default function NouvelleDemande() {
                             />
                           </div>
 
-                          {/* Qté supplément */}
                           {item.supplement_id && (
                             <div style={{ textAlign: 'center' }}>
                               <div style={{ fontSize: 10, color: '#6B7280', marginBottom: 2 }}>Qté doc</div>
@@ -806,7 +819,6 @@ export default function NouvelleDemande() {
                             </div>
                           )}
 
-                          {/* Total */}
                           <div style={{ textAlign: 'right', minWidth: 90 }}>
                             <div style={{ fontSize: 11, color: '#6B7280' }}>Total</div>
                             <div style={{ fontSize: 15, fontWeight: 700, color: '#4F46E5' }}>
@@ -820,7 +832,6 @@ export default function NouvelleDemande() {
                         </div>
                       </div>
 
-                      {/* Détails spécifiques */}
                       {detailsAffiches.length > 0 && (
                         <div style={{
                           marginTop: 10,
@@ -843,7 +854,6 @@ export default function NouvelleDemande() {
                   );
                 })}
 
-                {/* TOTAL GÉNÉRAL */}
                 <div style={{ marginTop: 12, padding: 18, borderRadius: 10, background: 'linear-gradient(135deg, #F3F4F6, #E5E7EB)', border: '1px solid #D1D5DB' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <span style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>
@@ -896,6 +906,29 @@ export default function NouvelleDemande() {
 
         </form>
       </div>
+
+      {/* ===== MODAL ESTIMATION ===== */}
+      {modalEstimation && demandeEstimee && (
+        <ModalEstimation
+          demande={demandeEstimee}
+          onClose={() => {
+            setModalEstimation(false);
+            navigate('/tableau-de-bord');
+          }}
+          onStatutChange={(demandeMiseAJour) => {
+            // ✅ Callback quand le statut change
+            console.log('🎉 Statut mis à jour:', demandeMiseAJour.statut);
+
+            // Afficher un message avant redirection
+            const message = demandeMiseAJour.statut === 'acceptée'
+              ? '✅ Votre demande a été acceptée !'
+              : '❌ Votre demande a été refusée.';
+             // Optionnel : afficher une alerte
+            // alert(message);
+          }}
+        />
+      )}
+
     </div>
   );
 }
