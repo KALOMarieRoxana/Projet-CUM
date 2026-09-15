@@ -190,11 +190,11 @@ class NotificationController extends Controller
     {
         switch ($demande->statut) {
             case 'acceptée':
-                return "✅ Votre demande N°{$demande->reference} a été acceptée. Vous pouvez télécharger votre document.";
+                return " Votre demande N°{$demande->reference} a été acceptée. Vous pouvez télécharger votre document.";
             case 'refusée':
-                return "❌ Votre demande N°{$demande->reference} a été refusée.";
+                return " Votre demande N°{$demande->reference} a été refusée.";
             case 'partiellement_acceptée':
-                return "⚠️ Votre demande N°{$demande->reference} a été partiellement acceptée.";
+                return " Votre demande N°{$demande->reference} a été partiellement acceptée.";
             default:
                 return "Le statut de votre demande N°{$demande->reference} a changé.";
         }

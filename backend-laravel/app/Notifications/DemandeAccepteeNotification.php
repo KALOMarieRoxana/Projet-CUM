@@ -28,7 +28,7 @@ class DemandeAccepteeNotification extends Notification
             'type'         => 'demande_acceptee',
             'demande_id'   => $this->demande->id_demande,
             'reference'    => $this->demande->reference,
-            'message'      => "🎉 Votre demande #{$this->demande->reference} a été acceptée ! Votre document est prêt à être téléchargé.",
+            'message'      => "Votre demande #{$this->demande->reference} a été acceptée ! Votre document est prêt à être téléchargé.",
             'pdf_path'     => $this->demande->pdf_path,
             'pdf_url'      => $this->demande->pdf_path 
                 ? url('storage/' . $this->demande->pdf_path)

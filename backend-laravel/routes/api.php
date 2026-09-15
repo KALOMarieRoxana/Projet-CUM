@@ -26,7 +26,7 @@ Route::middleware(CorsLocal::class)->group(function () {
                 'utilisateur' => auth()->user()
             ]);
         });
-        
+        Route::get('/demandes/statistiques', [DemandeController::class, 'statistiques']);
         Route::get('/demandes/mes-demandes', [DemandeController::class, 'mesDemandes']);
         Route::get('/demandes/{id}', [DemandeController::class, 'show']);
         Route::post('/demandes', [DemandeController::class, 'store']);

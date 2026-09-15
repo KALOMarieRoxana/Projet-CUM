@@ -425,6 +425,54 @@ class DemandeController extends Controller
         }
     }
 
+    public function statistiques(Request $request)
+    {
+        $citoyen = Auth::user();
+        if (!$citoyen) {
+         return response()->json(['message' => 'Non authentifié'], 401);
+        }
+
+        $citoyenId = $citoyen->id_citoyens ?? $citoyen->id;
+        $periode = $request->get('periode', '12m');
+
+        // ⚠️ Attention aux accents dans le statut : 'acceptée' vs 'acceptee'
+        $statuts = [
+            'acceptee'  => ['acceptée', 'acceptee', 'accepté', 'accepte'],
+            'refusee'   => ['refusée', 'refusee', 'refusé', 'refuse'],
+            'attente'   => ['en_attente', 'en attente'],
+        ];
+
+        $query = Demande::where('citoyen_id', $citoyenId);
+
+        $total     = (clone $query)->count();
+        $acceptees = (clone $query)->whereIn('statut', $statuts['acceptee'])->count();
+        $refusees  = (clone $query)->whereIn('statut', $statuts['refusee'])->count();
+        $enAttente = (clone $query)->whereIn('statut', $statuts['attente'])->count();
+
+        // ✅ Par mois (12 derniers mois)
+        $parMois = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $count = Demande::where('citoyen_id', $citoyenId)
+                ->whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->count();
+
+            $parMois[] = [
+                'label' => $date->translatedFormat('M'),
+                'total' => $count,
+            ];
+        }
+
+        return response()->json([
+            'total'      => $total,
+            'acceptees'  => $acceptees,
+            'refusees'   => $refusees,
+            'en_attente' => $enAttente,
+            'par_mois'   => $parMois,
+        ]);
+    }
+
     /**
      * Récupérer une demande spécifique
      */
