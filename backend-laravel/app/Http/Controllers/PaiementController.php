@@ -69,6 +69,60 @@ class PaiementController extends Controller
 
         return back()->with('success', "Paiement encaissé en espèces pour la référence {$demande->reference}.");
     }
+    // Liste DEMANDE PAYE
+
+    public function liste(Request $request)
+    {
+        // ✅ Mois sélectionné (par défaut : mois actuel)
+        $moisSelectionne = $request->input('mois', now()->format('Y-m'));
+
+        [$annee, $mois] = explode('-', $moisSelectionne);
+
+        // ✅ Liste des demandes payées ce mois
+        $demandes = Demande::with(['citoyen', 'demandeActes.typeActe', 'traiteur'])
+            ->where('est_paye', true)
+            ->whereYear('date_paiement', $annee)
+            ->whereMonth('date_paiement', $mois)
+            ->orderBy('date_paiement', 'desc')
+            ->get();
+
+        $totalMois = $demandes->sum('prix_total');
+        $nombreMois = $demandes->count();
+
+        // ✅ Liste des 12 derniers mois
+        $listeMois = [];
+        for ($i = 0; $i < 12; $i++) {
+            $date = now()->subMonths($i);
+            $anneeM = $date->year;
+            $moisM = $date->month;
+
+            $count = Demande::where('est_paye', true)
+                ->whereYear('date_paiement', $anneeM)
+                ->whereMonth('date_paiement', $moisM)
+                ->count();
+
+            $total = Demande::where('est_paye', true)
+                ->whereYear('date_paiement', $anneeM)
+                ->whereMonth('date_paiement', $moisM)
+                ->sum('prix_total');
+
+            $listeMois[] = [
+                'valeur' => sprintf('%04d-%02d', $anneeM, $moisM),
+                'label'  => $date->translatedFormat('F Y'),
+                'count'  => $count,
+                'total'  => $total,
+            ];
+        }
+
+        $data = compact('demandes', 'totalMois', 'nombreMois', 'listeMois', 'moisSelectionne');
+
+        // ✅ Choisir la vue selon la route appelée
+        if ($request->routeIs('super-admin.*')) {
+            return view('super-admin.paiements.liste', $data);
+        }
+
+        return view('admin.paiements.liste', $data);
+    }
 
     /**
      * ═══════════════════════════════════════════════════════════

@@ -212,6 +212,19 @@
             </a>
         @endif
 
+        {{--Liste paiements--}}
+         @if (Auth::user()->isSuperAdmin())
+            <a href="{{ route('super-admin.paiements.liste') }}"
+               class="nav-link {{ request()->routeIs('super-admin.paiements.liste*') ? 'active' : '' }}">
+                <i class="bi bi-list-ul"></i> Liste des Paiements
+            </a>
+        @else
+            <a href="{{ route('admin.paiements.liste') }}"
+               class="nav-link {{ request()->routeIs('admin.paiements.liste*') ? 'active' : '' }}">
+                <i class="bi bi-list-ul"></i> Liste des Paiements
+            </a>
+        @endif
+
         {{-- Gestion Admins (Super Admin uniquement) --}}
         @if (Auth::user()->isSuperAdmin())
             <div class="menu-label">Administration</div>

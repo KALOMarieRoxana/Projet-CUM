@@ -72,16 +72,17 @@
         <i class="bi bi-search text-primary"></i> Rechercher une demande
     </h5>
     <form method="GET" action="{{ route('admin.paiements.index') }}" class="row g-2">
-        <div class="col-md-9">
+        <div class="d-flex justify-content-between gap-3">
             <input type="text"
-                   name="reference"
-                   class="form-control form-control-lg"
-                   placeholder="Entrez la référence (ex: 6AA958)"
-                   value="{{ $reference }}"
-                   autofocus>
-        </div>
-        <div class="col-md-3">
-            <button type="submit" class="btn btn-primary btn-lg w-100">
+                name="reference"
+                class="form-control"
+                placeholder="Entrez la référence (ex: 6AA958)"
+                value="{{ $reference }}"
+                autofocus
+                style="max-width: 500px;">
+        
+            {{-- Boutton à Droite--}}
+            <button type="submit" class="btn btn-primary">
                 <i class="bi bi-search"></i> Rechercher
             </button>
         </div>

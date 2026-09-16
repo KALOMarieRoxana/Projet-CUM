@@ -94,6 +94,7 @@ Route::middleware(['auth', 'role:admin'])
         ])->name('demandes.update');
         Route::get('/statistiques', [DashboardController::class, 'statistiques'])->name('statistiques');
 
+       Route::get('/paiements/liste', [PaiementController::class, 'liste'])->name('paiements.liste');
         Route::get('/paiements', [PaiementController::class, 'index'])->name('paiements.index');
         Route::post('/paiements/{id}/marquer-paye', [PaiementController::class, 'marquerPaye'])->name('paiements.marquer-paye');
         Route::post('/paiements/{id}/annuler', [PaiementController::class, 'annuler'])->name('paiements.annuler');
@@ -138,6 +139,7 @@ Route::middleware(['auth', 'role:super_admin'])
         ])->name('demandes.update');
 
         // paiements
+        Route::get('/paiements/liste', [PaiementController::class, 'liste'])->name('paiements.liste');
         Route::get('/paiements', [PaiementController::class, 'index'])->name('paiements.index');
         Route::post('/paiements/{id}/marquer-paye', [PaiementController::class, 'marquerPaye'])->name('paiements.marquer-paye');
         Route::post('/paiements/{id}/annuler', [PaiementController::class, 'annuler'])->name('paiements.annuler');
