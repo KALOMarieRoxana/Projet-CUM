@@ -33,9 +33,11 @@
             align-items: center;
             gap: 10px;
         }
+        /* ✅ Logo */
         .sidebar .brand .logo-box {
-            width: 34px; height: 34px;
-            background: #4f46e5;
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
             border-radius: 8px;
         }
         .sidebar .menu-label {
@@ -115,50 +117,98 @@
         .badge-status-acceptee { background: #ecfdf5; color: #059669; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; }
         .badge-status-refusee { background: #fef2f2; color: #dc2626; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; }
 
-        .filter-btn.active {
-            color: #fff !important;
-        }
+        .filter-btn.active { color: #fff !important; }
         .btn-outline-secondary.active { background: #6c757d; }
         .btn-outline-warning.active { background: #ea580c; border-color: #ea580c; }
         .btn-outline-success.active { background: #059669; border-color: #059669; }
         .btn-outline-danger.active { background: #dc2626; border-color: #dc2626; }
+
+        /* ✅ Avatar initiales */
+        .avatar-initiales {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+            color: #FFF;
+            flex-shrink: 0;
+        }
     </style>
     @stack('styles')
 </head>
 <body>
 
+@php
+    // ✅ Calcul des initiales + couleur selon le rôle
+    $user = Auth::user();
+    $nom = trim($user->name ?? 'U');
+    $mots = preg_split('/\s+/', $nom);
+    $initiales = count($mots) >= 2
+        ? strtoupper(mb_substr($mots[0], 0, 1) . mb_substr($mots[1], 0, 1))
+        : strtoupper(mb_substr($nom, 0, 2));
+
+    $couleurAvatar = $user->role === 'super_admin'
+        ? 'linear-gradient(135deg, #4F46E5, #8B5CF6)'   // 👑 Violet/Indigo
+        : 'linear-gradient(135deg, #F59E0B, #F97316)';  // 🛡 Orange
+@endphp
+
+    {{-- ═══════════ SIDEBAR ═══════════ --}}
     <div class="sidebar">
         <div class="brand">
-            <div class="logo-box"></div>
+            {{-- ✅ Logo --}}
+            <img src="{{ asset('images/logo.png') }}"
+                 alt="Logo"
+                 class="logo-box">
             AdminPanel
         </div>
 
         <div class="menu-label">Menu</div>
+
+        {{-- Tableau de bord --}}
         <a href="{{ Auth::user()->isSuperAdmin() ? route('super-admin.dashboard') : route('admin.dashboard') }}"
-            class="nav-link {{ request()->routeIs('admin.dashboard') || request()->routeIs('admin.dashboard') || request()->routeIs('super-admin.dashboard') ? 'active' : '' }}">
+           class="nav-link {{ request()->routeIs('admin.dashboard') || request()->routeIs('super-admin.dashboard') ? 'active' : '' }}">
             <i class="bi bi-grid"></i> Tableau de bord
         </a>
-     
 
-        @if (Auth::user()->isAdmin())
-            <a href="{{ route('admin.demandes') }}" class="nav-link {{ request()->routeIs('admin.demandes*') ? 'active' : '' }}">
-                <i class="bi bi-inbox"></i> Demandes
-            </a>
-        @endif
-
+        {{-- Demandes --}}
         @if (Auth::user()->isSuperAdmin())
-            <a href="{{ route('super-admin.demandes') }}" class="nav-link {{ request()->routeIs('super-admin.demandes*') ? 'active' : '' }}">
+            <a href="{{ route('super-admin.demandes') }}"
+               class="nav-link {{ request()->routeIs('super-admin.demandes*') ? 'active' : '' }}">
                 <i class="bi bi-inbox"></i> Demandes
-            </a>
-            <a href="{{ route('super-admin.admins.index') }}" class="nav-link {{ request()->routeIs('super-admin.admins*') ? 'active' : '' }}">
-                <i class="bi bi-people"></i> Administrateurs
             </a>
         @else
-            <a href="{{ route('admin.demandes') }}" class="nav-link {{ request()->routeIs('admin.demandes*') ? 'active' : '' }}">
+            <a href="{{ route('admin.demandes') }}"
+               class="nav-link {{ request()->routeIs('admin.demandes*') ? 'active' : '' }}">
                 <i class="bi bi-inbox"></i> Demandes
             </a>
         @endif
 
+        {{-- Statistiques --}}
+        @if (Auth::user()->isSuperAdmin())
+            <a href="{{ route('super-admin.statistiques') }}"
+               class="nav-link {{ request()->routeIs('super-admin.statistiques*') ? 'active' : '' }}">
+                <i class="bi bi-bar-chart-fill"></i> Statistiques
+            </a>
+        @else
+            <a href="{{ route('admin.statistiques') }}"
+               class="nav-link {{ request()->routeIs('admin.statistiques*') ? 'active' : '' }}">
+                <i class="bi bi-bar-chart-fill"></i> Statistiques
+            </a>
+        @endif
+
+        {{-- Gestion Admins (Super Admin uniquement) --}}
+        @if (Auth::user()->isSuperAdmin())
+            <div class="menu-label">Administration</div>
+            <a href="{{ route('super-admin.admins.index') }}"
+               class="nav-link {{ request()->routeIs('super-admin.admins*') ? 'active' : '' }}">
+                <i class="bi bi-people"></i> Gestion Administrateurs
+            </a>
+        @endif
+
+        {{-- Déconnexion --}}
         <div class="menu-label">Compte</div>
         <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="nav-link">
             <i class="bi bi-box-arrow-right"></i> Déconnexion
@@ -168,6 +218,7 @@
         </form>
     </div>
 
+    {{-- ═══════════ MAIN CONTENT ═══════════ --}}
     <div class="main-content">
         <div class="topbar">
             <div class="search-box">
@@ -178,7 +229,12 @@
                 <i class="bi bi-bell fs-5 text-secondary"></i>
                 <div class="dropdown">
                     <div class="d-flex align-items-center gap-2" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <div class="bg-secondary rounded-circle" style="width:36px;height:36px;"></div>
+
+                        {{-- ✅ Avatar initiales --}}
+                        <div class="avatar-initiales" style="background:{{ $couleurAvatar }};">
+                            {{ $initiales }}
+                        </div>
+
                         <span class="fw-semibold">{{ Auth::user()->name }}</span>
                         <i class="bi bi-chevron-down text-muted" style="font-size: 0.7rem;"></i>
                     </div>
@@ -213,7 +269,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-        {{-- Modal : Mon compte --}}
+
+    {{-- ═══════════ MODAL : Mon compte ═══════════ --}}
     <div class="modal fade" id="modalMonCompte" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -254,7 +311,7 @@
         </div>
     </div>
 
-    {{-- Modal : Changer mot de passe --}}
+    {{-- ═══════════ MODAL : Changer mot de passe ═══════════ --}}
     <div class="modal fade" id="modalMotDePasse" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -290,7 +347,7 @@
         </div>
     </div>
 
-    {{-- Rouvrir automatiquement la modale concernée en cas d'erreur de validation --}}
+    {{-- Rouvrir automatiquement la modale concernée en cas d'erreur --}}
     @if ($errors->any())
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -314,6 +371,7 @@
         </div>
     </div>
     @endif
+
     @stack('scripts')
 </body>
 </html>

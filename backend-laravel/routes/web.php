@@ -91,6 +91,7 @@ Route::middleware(['auth', 'role:admin'])
             DemandeController::class,
             'update'
         ])->name('demandes.update');
+        Route::get('/statistiques', [DashboardController::class, 'statistiques'])->name('statistiques');
         // ✅ NOUVELLES ROUTES
         Route::post('/demandes/{id}/traiter', [DemandeController::class, 'traiter'])->name('demandes.traiter');
         Route::post('/demandes/items/{id}/traiter', [DemandeController::class, 'traiterItem'])->name('demandes.traiter-item');
@@ -136,6 +137,7 @@ Route::middleware(['auth', 'role:super_admin'])
         Route::post('/demandes/items/{id}/traiter', [DemandeController::class, 'traiterItem'])->name('demandes.traiter-item');
         Route::post('/demandes/{id}/archiver', [DemandeController::class, 'archiver'])->name('demandes.archiver');
         Route::get('/demandes/export', [DemandeController::class, 'export'])->name('demandes.export');
+        Route::get('/statistiques', [DashboardController::class, 'statistiques'])->name('statistiques');
 
         // Gestion des administrateurs
         Route::get('/admins', [

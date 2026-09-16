@@ -20,54 +20,62 @@
     <div class="alert alert-danger">{{ session('error') }}</div>
 @endif
 
-<!-- Statistiques -->
+{{-- ═══════════ STATISTIQUES ═══════════ --}}
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-icon" style="background:#eef2ff;color:#4f46e5;"><i class="bi bi-ticket-perforated"></i></div>
+            <div class="stat-icon" style="background:#eef2ff;color:#4f46e5;">
+                <i class="bi bi-ticket-perforated"></i>
+            </div>
             <div>
-                <h3>{{ $statistiques['total'] ?? 0 }}</h3>
+                <h3>{{ $stats['total'] }}</h3>
                 <p>Total des demandes</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-icon" style="background:#fff7ed;color:#ea580c;"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-icon" style="background:#fff7ed;color:#ea580c;">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
             <div>
-                <h3>{{ $statistiques['en_attente'] ?? 0 }}</h3>
+                <h3>{{ $stats['en_attente'] }}</h3>
                 <p>En attente</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-icon" style="background:#ecfdf5;color:#059669;"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-icon" style="background:#ecfdf5;color:#059669;">
+                <i class="bi bi-check-circle"></i>
+            </div>
             <div>
-                <h3>{{ $statistiques['acceptee'] ?? $statistiques['acceptée'] ?? 0 }}</h3>
+                <h3>{{ $stats['acceptee'] }}</h3>
                 <p>Acceptées</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-icon" style="background:#fef2f2;color:#dc2626;"><i class="bi bi-x-circle"></i></div>
+            <div class="stat-icon" style="background:#fef2f2;color:#dc2626;">
+                <i class="bi bi-x-circle"></i>
+            </div>
             <div>
-                <h3>{{ $statistiques['refusee'] ?? $statistiques['refusée'] ?? 0 }}</h3>
+                <h3>{{ $stats['refusee'] }}</h3>
                 <p>Refusées</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Filtres -->
+{{-- ═══════════ FILTRES ═══════════ --}}
 <div class="content-card mb-4">
     <div class="p-3">
         <form method="GET" action="{{ route('admin.demandes') }}" class="row g-2">
             <div class="col-md-3">
                 <select name="statut" class="form-select form-select-sm">
                     <option value="">Tous les statuts</option>
-                    <option value="en attente" {{ request('statut') == 'en attente' ? 'selected' : '' }}>En attente</option>
+                    <option value="en_attente" {{ request('statut') == 'en_attente' ? 'selected' : '' }}>En attente</option>
                     <option value="acceptée" {{ in_array(request('statut'), ['acceptée', 'acceptee']) ? 'selected' : '' }}>Acceptées</option>
                     <option value="refusée" {{ in_array(request('statut'), ['refusée', 'refusee']) ? 'selected' : '' }}>Refusées</option>
                     <option value="partiellement_traitée" {{ request('statut') == 'partiellement_traitée' ? 'selected' : '' }}>Partiellement traitées</option>
@@ -93,7 +101,7 @@
     </div>
 </div>
 
-<!-- Tableau des demandes -->
+{{-- ═══════════ TABLEAU ═══════════ --}}
 <div class="content-card">
     <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
         <div>
@@ -126,6 +134,7 @@
                     @php
                         $items = $demande->demandeActes ?? $demande->items ?? collect();
                         $nbActes = $items->sum('quantite');
+                        $estEnAttente = in_array($demande->statut, ['en_attente', 'en attente']);
                     @endphp
                     <tr>
                         <td class="ps-3">
@@ -162,7 +171,7 @@
                             <strong>{{ number_format($demande->prix_total ?? 0, 0, ',', ' ') }} Ar</strong>
                         </td>
                         <td>
-                            @if($demande->statut == 'en attente')
+                            @if($estEnAttente)
                                 <span class="badge bg-warning">⏳ En attente</span>
                             @elseif(in_array($demande->statut, ['acceptée', 'acceptee']))
                                 <span class="badge bg-success">✅ Acceptée</span>
@@ -178,7 +187,7 @@
                                 <i class="bi bi-eye"></i>
                             </button>
 
-                            @if($demande->statut == 'en attente')
+                            @if($estEnAttente)
                                 <form action="{{ route('admin.demandes.traiter', $demande->id_demande) }}" method="POST" class="d-inline">
                                     @csrf
                                     <input type="hidden" name="action" value="accepter">
@@ -215,9 +224,7 @@
     @endif
 </div>
 
-<!-- ========================================================== -->
-<!-- MODALS POUR LES DÉTAILS                                     -->
-<!-- ========================================================== -->
+{{-- ═══════════ MODALS DÉTAILS ═══════════ --}}
 @foreach($demandes ?? [] as $demande)
 @php
     $items = $demande->demandeActes ?? $demande->items ?? collect();
@@ -252,7 +259,7 @@
                             <tr><td><strong>Service:</strong></td><td>{{ ucfirst($demande->service) }}</td></tr>
                             <tr><td><strong>Prix total:</strong></td><td><strong>{{ number_format($demande->prix_total ?? 0, 0, ',', ' ') }} Ar</strong></td></tr>
                             <tr><td><strong>Statut:</strong></td><td>
-                                @if($demande->statut == 'en attente')
+                                @if(in_array($demande->statut, ['en_attente', 'en attente']))
                                     <span class="badge bg-warning">⏳ En attente</span>
                                 @elseif(in_array($demande->statut, ['acceptée', 'acceptee']))
                                     <span class="badge bg-success">✅ Acceptée</span>
@@ -278,6 +285,7 @@
                         $typeNom = $item->typeActe->nom ?? $item->type_acte ?? 'Acte';
                         $typeSlug = strtolower($item->typeActe->type_acte ?? $item->type_acte ?? '');
                         $details = is_string($item->details) ? json_decode($item->details) : (object)($item->details ?? []);
+                        $itemEnAttente = in_array($item->statut, ['en_attente', 'en attente']);
                     @endphp
                     <div class="card mb-3 {{ in_array($item->statut, ['acceptée', 'acceptee']) ? 'border-success' : (in_array($item->statut, ['refusée', 'refusee']) ? 'border-danger' : 'border-warning') }}">
                         <div class="card-body">
@@ -289,7 +297,7 @@
                                     <span class="badge bg-dark">{{ strtoupper($item->langue ?? 'MG') }}</span>
                                 </h6>
                                 <div>
-                                    @if($item->statut == 'en attente')
+                                    @if($itemEnAttente)
                                         <span class="badge bg-warning">⏳ En attente</span>
                                     @elseif(in_array($item->statut, ['acceptée', 'acceptee']))
                                         <span class="badge bg-success">✅ Acceptée</span>
@@ -366,7 +374,7 @@
                                 @endif
                             </div>
 
-                            @if($item->statut == 'en attente' && ($demande->statut == 'en attente' || $demande->statut == 'partiellement_traitée'))
+                            @if($itemEnAttente && ($demande->statut == 'partiellement_traitée' || in_array($demande->statut, ['en_attente', 'en attente'])))
                                 <div class="mt-2">
                                     <form action="{{ route('admin.demandes.traiter-item', $item->id) }}" method="POST" class="d-inline">
                                         @csrf
@@ -396,7 +404,7 @@
                                 $totalItems = $items->count();
                                 $acceptes = $items->filter(fn($i) => in_array($i->statut, ['acceptée', 'acceptee']))->count();
                                 $refuses = $items->filter(fn($i) => in_array($i->statut, ['refusée', 'refusee']))->count();
-                                $enAttente = $items->where('statut', 'en attente')->count();
+                                $enAttente = $items->filter(fn($i) => in_array($i->statut, ['en_attente', 'en attente']))->count();
                             @endphp
                             <span class="badge bg-secondary">{{ $totalItems }} total</span>
                             <span class="badge bg-success">{{ $acceptes }} acceptés</span>
@@ -408,7 +416,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-                @if($demande->statut == 'en attente' || $demande->statut == 'partiellement_traitée')
+                @if(in_array($demande->statut, ['en_attente', 'en attente']) || $demande->statut == 'partiellement_traitée')
                     <form action="{{ route('admin.demandes.traiter', $demande->id_demande) }}" method="POST" class="d-inline">
                         @csrf
                         <input type="hidden" name="action" value="accepter">

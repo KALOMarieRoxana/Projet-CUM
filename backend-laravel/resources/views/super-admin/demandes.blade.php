@@ -20,13 +20,23 @@
     <div class="alert alert-danger">{{ session('error') }}</div>
 @endif
 
+{{-- ✅ CALCUL DES STATISTIQUES (AJOUTÉ) --}}
+@php
+    $statistiques = $statistiques ?? [
+        'total'      => \App\Models\Demande::count(),
+        'en_attente' => \App\Models\Demande::whereIn('statut', ['en_attente', 'en attente'])->count(),
+        'acceptee'   => \App\Models\Demande::whereIn('statut', ['acceptée', 'acceptee'])->count(),
+        'refusee'    => \App\Models\Demande::whereIn('statut', ['refusée', 'refusee'])->count(),
+    ];
+@endphp
+
 <!-- Statistiques -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-icon" style="background:#eef2ff;color:#4f46e5;"><i class="bi bi-ticket-perforated"></i></div>
             <div>
-                <h3>{{ $statistiques['total'] ?? 0 }}</h3>
+                <h3>{{ $statistiques['total'] }}</h3>
                 <p>Total des demandes</p>
             </div>
         </div>
@@ -35,7 +45,7 @@
         <div class="stat-card">
             <div class="stat-icon" style="background:#fff7ed;color:#ea580c;"><i class="bi bi-hourglass-split"></i></div>
             <div>
-                <h3>{{ $statistiques['en_attente'] ?? 0 }}</h3>
+                <h3>{{ $statistiques['en_attente'] }}</h3>
                 <p>En attente</p>
             </div>
         </div>
@@ -44,7 +54,7 @@
         <div class="stat-card">
             <div class="stat-icon" style="background:#ecfdf5;color:#059669;"><i class="bi bi-check-circle"></i></div>
             <div>
-                <h3>{{ $statistiques['acceptee'] ?? $statistiques['acceptée'] ?? 0 }}</h3>
+                <h3>{{ $statistiques['acceptee'] }}</h3>
                 <p>Acceptées</p>
             </div>
         </div>
@@ -53,23 +63,13 @@
         <div class="stat-card">
             <div class="stat-icon" style="background:#fef2f2;color:#dc2626;"><i class="bi bi-x-circle"></i></div>
             <div>
-                <h3>{{ $statistiques['refusee'] ?? $statistiques['refusée'] ?? 0 }}</h3>
+                <h3>{{ $statistiques['refusee'] }}</h3>
                 <p>Refusées</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Graphique -->
-<div class="content-card p-4 mb-4">
-    <div class="d-flex justify-content-between align-items-start mb-3">
-        <div>
-            <h5 class="mb-0">Analytique</h5>
-            <small class="text-muted">Analyse des demandes des 30 derniers jours</small>
-        </div>
-    </div>
-    <canvas id="demandesChart" height="90"></canvas>
-</div>
 
 <!-- Filtres -->
 <div class="content-card mb-4">

@@ -32,13 +32,36 @@ class DemandeController extends Controller
             $query->where('statut', $request->statut);
         }
 
-        $demandes = $query->latest()->paginate(15);
-
-        if ($request->wantsJson()) {
-            return response()->json(['demandes' => $demandes], 200);
+        if ($request->filled('type') && $request->type !== 'tous') {
+            $query->whereHas('demandeActes.typeActe', function ($q) use ($request) {
+                $q->where('type_acte', $request->type);
+            });
+        }
+        if ($request->filled('q')) {
+            $q = $request->q;
+            $query->where(function ($sub) use ($q) {
+                $sub->where('reference', 'LIKE', "%{$q}%")
+                    ->orWhere('demandeur_nom', 'LIKE', "%{$q}%")
+                    ->orWhere('demandeur_prenom', 'LIKE', "%{$q}%");
+            });
         }
 
-        return view('admin.demandes', compact('demandes'));
+        $demandes = $query->latest()->paginate(15);
+
+        // ✅ 2. Compteurs GLOBAUX (indépendants des filtres)
+        $stats = [
+            'total'      => Demande::count(),
+            'en_attente' => Demande::whereIn('statut', ['en_attente', 'en attente'])->count(),
+            'acceptee'   => Demande::whereIn('statut', ['acceptée', 'acceptee'])->count(),
+            'refusee'    => Demande::whereIn('statut', ['refusée', 'refusee'])->count(),
+        ];
+
+         // ✅ 3. Choisir la vue selon la route appelée
+        if ($request->routeIs('super-admin.*')) {
+            return view('super-admin.demandes', compact('demandes', 'stats'));
+        }
+
+        return view('admin.demandes', compact('demandes', 'stats'));
     }
 
     /**
@@ -563,7 +586,7 @@ class DemandeController extends Controller
             return redirect()->back()->with('error', 'Erreur: ' . $e->getMessage());
         }
     }
-    
+
     public function verifierStatut($reference)
     {
         try {

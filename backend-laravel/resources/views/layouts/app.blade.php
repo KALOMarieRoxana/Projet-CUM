@@ -53,6 +53,11 @@
            class="nav-link {{ request()->routeIs('*demandes*') ? 'active' : '' }}">
             <i class="bi bi-inbox"></i> Demandes
         </a>
+        {{-- Lien Statistiques --}}
+        <a href="{{ Auth::user()->isSuperAdmin() ? route('super-admin.statistiques') : route('admin.statistiques') }}"
+           class="nav-link {{ request()->routeIs('*statistiques*') ? 'active' : '' }}">
+            <i class="bi bi-bar-chart-fill"></i> Statistiques
+        </a>
 
         {{-- Section Administration visible uniquement pour le super-admin --}}
         @if(Auth::user()->isSuperAdmin())
