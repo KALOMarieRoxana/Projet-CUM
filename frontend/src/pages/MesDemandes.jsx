@@ -73,6 +73,7 @@ export default function MesDemandes() {
   const [demandes, setDemandes] = useState([]);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState('');
+  const dejaCharge = useRef(false);
   const [filtreStatut, setFiltreStatut] = useState('tous');
   const [recherche, setRecherche] = useState('');
   const [demandeSelectionnee, setDemandeSelectionnee] = useState(null);
@@ -81,9 +82,14 @@ export default function MesDemandes() {
 
   useEffect(() => {
     if (!utilisateur) {
+      dejaCharge.current = false; 
       navigate('/connexion');
       return;
     }
+
+    if (dejaCharge.current) return;
+    dejaCharge.current = true;
+
     chargerDemandes();
   }, [utilisateur, navigate]);
 

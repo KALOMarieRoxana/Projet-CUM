@@ -13,7 +13,7 @@ export default function NotificationBell() {
   // ✅ Charger le compteur toutes les 15 secondes
   useEffect(() => {
     chargerCompteur();
-    const interval = setInterval(chargerCompteur, 15000);
+    const interval = setInterval(chargerCompteur, 60000);
     return () => clearInterval(interval);
   }, []);
 

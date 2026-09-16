@@ -3,308 +3,348 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inscription - CUM État Civil</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <title>Inscription — État Civil</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        /* Réutiliser les mêmes styles que login */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #F3F4F6;
-            padding: 20px;
-        }
-        .login-container {
-            width: 100%;
-            max-width: 1000px;
-            background: #FFFFFF;
-            border-radius: 24px;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            min-height: 620px;
-        }
-        .left-side {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+            padding: 40px 20px;
             position: relative;
-            background: linear-gradient(135deg, rgba(37, 99, 235, 0.85), rgba(29, 78, 216, 0.85)),
-                        url('{{ asset('images/login-bg.jpg') }}') center/cover no-repeat;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            color: #FFFFFF;
+            overflow-x: hidden;
         }
-        .left-side::before {
+
+        body::before {
             content: '';
             position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, rgba(37, 99, 235, 0.75) 0%, rgba(29, 78, 216, 0.9) 100%);
-        }
-        .left-content { position: relative; z-index: 1; }
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 40px;
-        }
-        .brand-logo {
-            width: 56px;
-            height: 56px;
-            background: rgba(255,255,255,0.15);
+            top: -20%;
+            left: -10%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(79,70,229,0.35) 0%, transparent 70%);
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: 700;
-            border: 2px solid rgba(255,255,255,0.3);
+            pointer-events: none;
         }
-        .brand-text h1 { font-size: 20px; font-weight: 700; margin: 0; }
-        .brand-text p { font-size: 13px; opacity: 0.9; margin: 0; }
-        .tagline { font-size: 22px; font-weight: 600; line-height: 1.4; margin-bottom: 32px; max-width: 340px; }
-        .features { display: flex; flex-direction: column; gap: 14px; }
-        .feature-item { display: flex; align-items: center; gap: 12px; font-size: 14px; opacity: 0.95; }
-        .feature-icon {
-            width: 34px; height: 34px;
-            background: rgba(255,255,255,0.15);
+        body::after {
+            content: '';
+            position: absolute;
+            bottom: -20%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(59,130,246,0.25) 0%, transparent 70%);
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 15px;
+            pointer-events: none;
         }
-        .right-side {
-            padding: 48px 40px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            overflow-y: auto;
-            max-height: 620px;
+
+        /* ═══════════ CARTE RECTANGLE ═══════════ */
+        .auth-card {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 520px;              /* ⬅️ Plus large pour l'inscription */
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 16px;
+            padding: 32px 36px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
         }
-        .tabs {
-            display: flex;
-            background: #F3F4F6;
-            border-radius: 10px;
-            padding: 4px;
-            margin-bottom: 24px;
-        }
-        .tab {
-            flex: 1;
-            padding: 10px;
+
+        .auth-header {
             text-align: center;
-            font-size: 14px;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: #6B7280;
-            text-decoration: none;
+            margin-bottom: 22px;
         }
-        .tab.active {
-            background: #2563EB;
+
+        .auth-header img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+
+        .auth-header .etat-civil {
+            font-size: 18px;
+            font-weight: 700;
+            color: #F1F5F9;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .auth-header h1 {
+            font-size: 22px;
+            font-weight: 700;
             color: #FFFFFF;
-            box-shadow: 0 2px 6px rgba(37,99,235,0.3);
+            margin-bottom: 4px;
         }
-        .form-title { font-size: 22px; font-weight: 700; color: #111827; margin-bottom: 6px; }
-        .form-subtitle { font-size: 13px; color: #6B7280; margin-bottom: 20px; }
-        .form-group { margin-bottom: 14px; }
-        .form-group label {
-            display: block;
+
+        .auth-header p {
             font-size: 13px;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 6px;
+            color: #94A3B8;
+            margin: 0;
         }
-        .input-wrapper { position: relative; }
-        .input-wrapper .icon {
+
+        /* ✅ Grille 2 colonnes pour compacter */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .form-grid .full {
+            grid-column: 1 / -1;
+        }
+
+        .form-group {
+            margin-bottom: 0;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i.prefix {
             position: absolute;
             left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            color: #9CA3AF;
-            font-size: 16px;
+            color: #94A3B8;
+            font-size: 15px;
+            pointer-events: none;
         }
-        .input-wrapper input, .input-wrapper select {
+
+        .input-wrapper input,
+        .input-wrapper select {
             width: 100%;
-            padding: 11px 14px 11px 42px;
-            border: 1px solid #E5E7EB;
+            padding: 12px 42px 12px 42px;
             border-radius: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            background: rgba(30, 41, 59, 0.6);
+            color: #F1F5F9;
             font-size: 14px;
-            color: #111827;
             outline: none;
-            transition: border 0.2s;
-            background: #FFF;
+            transition: border 0.2s, background 0.2s;
         }
-        .input-wrapper input:focus, .input-wrapper select:focus {
-            border-color: #2563EB;
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+
+        .input-wrapper input::placeholder {
+            color: #64748B;
         }
-        .input-wrapper .toggle-pwd {
+
+        .input-wrapper input:focus,
+        .input-wrapper select:focus {
+            border-color: #4F46E5;
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        .input-wrapper select {
+            appearance: none;
+            padding-right: 42px;
+        }
+
+        .input-wrapper select option {
+            background: #1E293B;
+            color: #F1F5F9;
+        }
+
+        .input-wrapper .chevron {
             position: absolute;
-            right: 12px;
+            right: 14px;
             top: 50%;
             transform: translateY(-50%);
+            color: #94A3B8;
+            pointer-events: none;
+            font-size: 13px;
+        }
+
+        .input-wrapper .toggle-eye {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94A3B8;
+            cursor: pointer;
+            font-size: 15px;
             background: none;
             border: none;
-            color: #9CA3AF;
-            cursor: pointer;
-            font-size: 16px;
+            padding: 0;
         }
-        .btn-submit {
+
+        .btn-primary-custom {
             width: 100%;
-            padding: 13px;
-            background: #2563EB;
-            color: #FFFFFF;
-            border: none;
+            padding: 12px;
             border-radius: 10px;
+            border: none;
+            background: #2563EB;
+            color: #FFF;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background 0.2s, transform 0.1s;
             margin-top: 10px;
         }
-        .btn-submit:hover {
+
+        .btn-primary-custom:hover {
             background: #1D4ED8;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(37,99,235,0.3);
         }
-        .login-link {
+
+        .btn-primary-custom:active {
+            transform: scale(0.99);
+        }
+
+        .auth-footer {
             text-align: center;
+            margin-top: 18px;
             font-size: 13px;
-            color: #6B7280;
-            margin-top: 16px;
+            color: #94A3B8;
         }
-        .login-link a { color: #2563EB; font-weight: 600; text-decoration: none; }
-        .alert { padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; }
-        .alert-danger { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
+
+        .auth-footer a {
+            color: #60A5FA;
+            text-decoration: none;
+            font-weight: 600;
         }
-        @media (max-width: 768px) {
-            .login-container { grid-template-columns: 1fr; }
-            .left-side { display: none; }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .alert-error {
+            background: rgba(220, 38, 38, 0.15);
+            border: 1px solid rgba(220, 38, 38, 0.4);
+            color: #FCA5A5;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        /* ✅ Responsive : 1 colonne sur mobile */
+        @media (max-width: 500px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="login-container">
-    
-    {{-- Partie droite : Formulaire d'inscription --}}
-    <div class="right-side">
+<div class="auth-card">
 
-        <div class="tabs">
-            <a href="{{ route('login') }}" class="tab">Connexion</a>
-            <a href="{{ route('register') }}" class="tab active">Inscription</a>
-        </div>
-
-        <h2 class="form-title">Créer un compte</h2>
-        <p class="form-subtitle">Rejoignez le portail citoyen</p>
-
-        @if ($errors->any())
-            <div class="alert alert-danger">
-                @foreach ($errors->all() as $error)
-                    <div><i class="bi bi-exclamation-circle"></i> {{ $error }}</div>
-                @endforeach
-            </div>
-        @endif
-
-        <form method="POST" action="{{ route('register') }}">
-            @csrf
-
-            <div class="grid-2">
-                <div class="form-group">
-                    <label>Nom</label>
-                    <div class="input-wrapper">
-                        <i class="bi bi-person icon"></i>
-                        <input type="text" name="name" value="{{ old('name') }}" placeholder="KALO" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Prénom</label>
-                    <div class="input-wrapper">
-                        <i class="bi bi-person icon"></i>
-                        <input type="text" name="prenom" value="{{ old('prenom') }}" placeholder="Marie" required>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Adresse email</label>
-                <div class="input-wrapper">
-                    <i class="bi bi-envelope icon"></i>
-                    <input type="email" name="email" value="{{ old('email') }}" placeholder="votre.email@exemple.com" required>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Contact</label>
-                <div class="input-wrapper">
-                    <i class="bi bi-telephone icon"></i>
-                    <input type="text" name="contact" value="{{ old('contact') }}" placeholder="0376191729" required>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Rôle</label>
-                <div class="input-wrapper">
-                    <i class="bi bi-shield icon"></i>
-                    <select name="role" required>
-                        <option value="">— Sélectionner un rôle —</option>
-                        <option value="citoyen" {{ old('role') == 'citoyen' ? 'selected' : '' }}>Citoyen</option>
-                        <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin</option>
-                        <option value="super_admin" {{ old('role') == 'super_admin' ? 'selected' : '' }}>Super Admin</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="grid-2">
-                <div class="form-group">
-                    <label>Mot de passe</label>
-                    <div class="input-wrapper">
-                        <i class="bi bi-lock icon"></i>
-                        <input type="password" name="password" id="password" placeholder="••••••••" required>
-                        <button type="button" class="toggle-pwd" onclick="togglePassword('password', this)">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Confirmer</label>
-                    <div class="input-wrapper">
-                        <i class="bi bi-lock-fill icon"></i>
-                        <input type="password" name="password_confirmation" id="password_confirmation" placeholder="••••••••" required>
-                        <button type="button" class="toggle-pwd" onclick="togglePassword('password_confirmation', this)">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <button type="submit" class="btn-submit">
-                <i class="bi bi-person-plus"></i> Créer mon compte
-            </button>
-        </form>
-
-        <div class="login-link">
-            Déjà inscrit ?
-            <a href="{{ route('login') }}">Se connecter</a>
-        </div>
+    <div class="auth-header">
+        <img src="{{ asset('images/logo.png') }}" alt="État Civil">
+        <div class="etat-civil">ÉTAT CIVIL</div>
+        <h1>Inscription</h1>
+        <p>Créez votre compte</p>
     </div>
+
+    @if ($errors->any())
+        <div class="alert-error">
+            @foreach ($errors->all() as $error)
+                <div>{{ $error }}</div>
+            @endforeach
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('register') }}">
+        @csrf
+
+        {{-- Ligne 1 : Nom + Prénom --}}
+        <div class="form-grid">
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <i class="bi bi-person prefix"></i>
+                    <input type="text" name="name" value="{{ old('name') }}" placeholder="Nom" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <i class="bi bi-person prefix"></i>
+                    <input type="text" name="prenom" value="{{ old('prenom') }}" placeholder="Prénom" required>
+                </div>
+            </div>
+        </div>
+
+        {{-- Ligne 2 : Email + Téléphone --}}
+        <div class="form-grid">
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <i class="bi bi-envelope prefix"></i>
+                    <input type="email" name="email" value="{{ old('email') }}" placeholder="Email" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <i class="bi bi-telephone prefix"></i>
+                    <input type="text" name="contact" value="{{ old('contact') }}" placeholder="Téléphone">
+                </div>
+            </div>
+        </div>
+
+        {{-- Ligne 3 : Mot de passe + Confirmation --}}
+        <div class="form-grid">
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <i class="bi bi-lock prefix"></i>
+                    <input type="password" name="password" id="password" placeholder="Mot de passe" required>
+                    <button type="button" class="toggle-eye" onclick="togglePassword('password', this)">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <i class="bi bi-lock prefix"></i>
+                    <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Confirmer" required>
+                    <button type="button" class="toggle-eye" onclick="togglePassword('password_confirmation', this)">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {{-- Ligne 4 : Rôle --}}
+        <div class="form-group" style="margin-bottom: 10px;">
+            <div class="input-wrapper">
+                <i class="bi bi-shield prefix"></i>
+                <select name="role" required>
+                    <option value="">Choisir votre rôle</option>
+                    <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>🛡 Admin</option>
+                    <option value="super_admin" {{ old('role') === 'super_admin' ? 'selected' : '' }}>👑 Super Admin</option>
+                </select>
+                <i class="bi bi-chevron-down chevron"></i>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-primary-custom">
+            S'inscrire
+        </button>
+    </form>
+
+    <div class="auth-footer">
+        Déjà un compte ?
+        <a href="{{ route('login') }}">Se connecter</a>
+    </div>
+
 </div>
 
 <script>
-    function togglePassword(inputId, btn) {
-        const input = document.getElementById(inputId);
+    function togglePassword(id, btn) {
+        const input = document.getElementById(id);
         const icon = btn.querySelector('i');
         if (input.type === 'password') {
             input.type = 'text';
