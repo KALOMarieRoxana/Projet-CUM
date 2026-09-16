@@ -408,6 +408,51 @@
         </table>
     </div>
 
+    {{-- ═══════════════════════════════════════════════════════════ --}}
+    {{-- TAMPON PAIEMENT                                             --}}
+    {{-- ═══════════════════════════════════════════════════════════ --}}
+    <div style="text-align: center; padding: 20px;">
+        @if($demande->est_paye)
+            {{-- ✅ PAYÉ --}}
+            <div style="
+                position: absolute;
+                top: 250px;
+                right: 40px;
+                transform: rotate(-15deg);
+                border: 5px solid #10B981;
+                color: #10B981;
+                font-size: 42px;
+                font-weight: 900;
+                padding: 12px 30px;
+                border-radius: 10px;
+                letter-spacing: 4px;
+                opacity: 0.85;
+                z-index: 999;
+            ">
+                PAYÉ
+            </div>
+        @else
+            {{-- ❌ NON PAYÉ --}}
+            <div style="
+                position: absolute;
+                top: 250px;
+                right: 40px;
+                transform: rotate(-15deg);
+                border: 5px solid #DC2626;
+                color: #DC2626;
+                font-size: 42px;
+                font-weight: 900;
+                padding: 12px 30px;
+                border-radius: 10px;
+                letter-spacing: 4px;
+                opacity: 0.85;
+                z-index: 999;
+            ">
+                NON PAYÉ
+            </div>
+        @endif
+    </div>
+    
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- INFORMATIONS DU DEMANDEUR                                   -->
     <!-- ═══════════════════════════════════════════════════════════ -->

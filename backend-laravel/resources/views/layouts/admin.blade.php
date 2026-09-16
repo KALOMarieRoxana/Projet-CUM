@@ -199,6 +199,19 @@
             </a>
         @endif
 
+        {{--Paiements--}}
+         @if (Auth::user()->isSuperAdmin())
+            <a href="{{ route('super-admin.paiements.index') }}"
+               class="nav-link {{ request()->routeIs('super-admin.paiements*') ? 'active' : '' }}">
+                <i class="bi bi-cash-stack"></i> Paiements
+            </a>
+        @else
+            <a href="{{ route('admin.paiements.index') }}"
+               class="nav-link {{ request()->routeIs('admin.paiements*') ? 'active' : '' }}">
+                <i class="bi bi-cash-stack"></i> Paiements
+            </a>
+        @endif
+
         {{-- Gestion Admins (Super Admin uniquement) --}}
         @if (Auth::user()->isSuperAdmin())
             <div class="menu-label">Administration</div>

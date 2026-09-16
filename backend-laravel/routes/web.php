@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DemandeController;
 use App\Http\Controllers\DemandePdfController;
+use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\LoginController;
@@ -92,6 +93,10 @@ Route::middleware(['auth', 'role:admin'])
             'update'
         ])->name('demandes.update');
         Route::get('/statistiques', [DashboardController::class, 'statistiques'])->name('statistiques');
+
+        Route::get('/paiements', [PaiementController::class, 'index'])->name('paiements.index');
+        Route::post('/paiements/{id}/marquer-paye', [PaiementController::class, 'marquerPaye'])->name('paiements.marquer-paye');
+        Route::post('/paiements/{id}/annuler', [PaiementController::class, 'annuler'])->name('paiements.annuler');
         // ✅ NOUVELLES ROUTES
         Route::post('/demandes/{id}/traiter', [DemandeController::class, 'traiter'])->name('demandes.traiter');
         Route::post('/demandes/items/{id}/traiter', [DemandeController::class, 'traiterItem'])->name('demandes.traiter-item');
@@ -131,6 +136,11 @@ Route::middleware(['auth', 'role:super_admin'])
             DemandeController::class,
             'update'
         ])->name('demandes.update');
+
+        // paiements
+        Route::get('/paiements', [PaiementController::class, 'index'])->name('paiements.index');
+        Route::post('/paiements/{id}/marquer-paye', [PaiementController::class, 'marquerPaye'])->name('paiements.marquer-paye');
+        Route::post('/paiements/{id}/annuler', [PaiementController::class, 'annuler'])->name('paiements.annuler');
 
         // ✅ NOUVELLES ROUTES
         Route::post('/demandes/{id}/traiter', [DemandeController::class, 'traiter'])->name('demandes.traiter');

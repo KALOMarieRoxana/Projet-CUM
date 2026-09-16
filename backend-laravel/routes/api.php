@@ -43,7 +43,7 @@ Route::middleware(CorsLocal::class)->group(function () {
         Route::post('/notifications/{id}/marquer-lue', [NotificationController::class, 'marquerLue']);
         Route::post('/notifications/marquer-toutes-lues', [NotificationController::class, 'marquerToutesLues']);
         Route::get('/notifications/{id}/pdf', [NotificationController::class, 'telechargerPdf']);
-
+        
         Route::get('/serveur/statut', function (\Illuminate\Http\Request $request) {
             return response()->json([
                 'message' => "Bienvenue {$request->user()->email}, vous avez bien accès au serveur.",

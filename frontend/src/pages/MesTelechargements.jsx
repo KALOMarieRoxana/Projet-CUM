@@ -163,7 +163,7 @@ export default function MesTelechargements() {
                     <div style={{
                         padding: 16,
                         background: 'linear-gradient(135deg, #D1FAE5, #A7F3D0)',
-                        border: '1px solid #10B981',
+                        border: '1px solid #52e7e7',
                         borderRadius: 12,
                         marginBottom: 24,
                         display: 'flex',
@@ -172,7 +172,7 @@ export default function MesTelechargements() {
                     }}>
                         <div style={{
                             width: 40, height: 40, borderRadius: '50%',
-                            background: '#10B981', color: '#FFF',
+                            background: '#30f381', color: '#FFF',
                             display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>
                             <CheckCircle size={20} />
@@ -246,7 +246,7 @@ export default function MesTelechargements() {
                                 {/* Header avec icône PDF */}
                                 <div style={{
                                     padding: 20,
-                                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                                    background: 'linear-gradient(135deg, #10B981, #4b7dda)',
                                     color: '#FFF',
                                     display: 'flex',
                                     alignItems: 'center',

@@ -43,6 +43,9 @@ class Demande extends Model
         'pdf_path',
         'pdf_genere_at',
         'notification_lue',
+        'est_paye',
+        'date_paiement',
+        'encaisse_par',
     ];
 
     protected $casts = [
@@ -52,6 +55,8 @@ class Demande extends Model
         'pdf_genere_at' => 'datetime',
         'notification_lue' => 'boolean',
         'prix_total' => 'decimal:2',
+        'est_paye'      => 'boolean',
+        'date_paiement' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
