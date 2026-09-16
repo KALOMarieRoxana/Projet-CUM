@@ -217,14 +217,26 @@ export default function Dashboard() {
 
     try {
       setChargementMdp(true);
-      await api.put('/auth/changer-mot-de-passe', { ancienMotDePasse, nouveauMotDePasse });
+      await api.put('/auth/changer-mot-de-passe', { 
+        ancienMotDePasse: ancienMotDePasse,
+        nouveauMotDePasse: nouveauMotDePasse,
+        nouveauMotDePasse_confirmation: confirmerMotDePasse,
+      });
       setSuccesMdp('Mot de passe changé avec succès !');
       setAncienMotDePasse('');
       setNouveauMotDePasse('');
       setConfirmerMotDePasse('');
       setTimeout(() => fermerModalChangerMdp(), 2000);
     } catch (err) {
-      setErreurMdp(err.response?.data?.message || 'Erreur lors du changement de mot de passe.');
+
+         // ✅ Extraction sécurisée du message d'erreur
+        const message =
+          typeof err.response?.data?.message === 'string'
+            ? err.response.data.message
+            : err.response?.data?.message?.nouveauMotDePasse?.[0]
+            || err.response?.data?.message?.ancienMotDePasse?.[0]
+            || 'Erreur lors du changement de mot de passe.';
+        setErreurMdp(message);
     } finally {
       setChargementMdp(false);
     }

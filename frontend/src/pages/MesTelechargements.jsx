@@ -142,7 +142,7 @@ export default function MesTelechargements() {
                             <span style={{ fontSize: 13 }}>Retour</span>
                         </Link>
                         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: colors.text }}>
-                            📥 Mes téléchargements
+                             Mes téléchargements
                         </h1>
                     </div>
 

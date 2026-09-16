@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Citoyen;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-
 
 class AuthController extends Controller
 {
@@ -101,44 +101,60 @@ class AuthController extends Controller
         ]);
     }
 
-     public function changerMotDePasse(Request $request)
+    /**
+     * ═══════════════════════════════════════════════════════════
+     * CHANGER MOT DE PASSE (CORRIGÉ)
+     * ═══════════════════════════════════════════════════════════
+     */
+    public function changerMotDePasse(Request $request)
     {
         try {
-            // Validation des données
+            // ✅ Validation
             $request->validate([
-                'ancienMotDePasse' => 'required|string',
+                'ancienMotDePasse'  => 'required|string',
                 'nouveauMotDePasse' => 'required|string|min:6|confirmed',
             ], [
-                'ancienMotDePasse.required' => 'L\'ancien mot de passe est obligatoire.',
-                'nouveauMotDePasse.required' => 'Le nouveau mot de passe est obligatoire.',
-                'nouveauMotDePasse.min' => 'Le nouveau mot de passe doit contenir au moins 6 caractères.',
+                'ancienMotDePasse.required'   => 'L\'ancien mot de passe est obligatoire.',
+                'nouveauMotDePasse.required'  => 'Le nouveau mot de passe est obligatoire.',
+                'nouveauMotDePasse.min'       => 'Le nouveau mot de passe doit contenir au moins 6 caractères.',
                 'nouveauMotDePasse.confirmed' => 'Les mots de passe ne correspondent pas.',
             ]);
 
-             // Récupérer l'utilisateur connecté
-            $utilisateur = Auth::user();
+            // ✅ Récupérer le citoyen connecté
+            $citoyen = Auth::guard('citoyen')->user() ?? Auth::user();
 
-            // Vérifier l'ancien mot de passe
-            if (!Hash::check($request->ancienMotDePasse, $utilisateur->mot_de_passe)) {
+            if (!$citoyen) {
+                return response()->json([
+                    'message' => 'Citoyen non authentifié.'
+                ], 401);
+            }
+
+            // ✅ Vérifier l'ancien mot de passe (colonne = password)
+            if (!Hash::check($request->ancienMotDePasse, $citoyen->password)) {
                 return response()->json([
                     'message' => 'L\'ancien mot de passe est incorrect.'
                 ], 401);
             }
-             // Mettre à jour le mot de passe
-            $utilisateur->mot_de_passe = Hash::make($request->nouveauMotDePasse);
-            $utilisateur->save();
+
+            // ✅ Mettre à jour le mot de passe
+            $citoyen->password = Hash::make($request->nouveauMotDePasse);
+            $citoyen->save();
 
             return response()->json([
                 'message' => 'Mot de passe changé avec succès !'
             ], 200);
 
         } catch (ValidationException $e) {
+            $premiereErreur = collect($e->errors())->flatten()->first() ?? 'Erreur de validation.';
             return response()->json([
-                'message' => $e->errors()
+                'message' => $premiereErreur
             ], 422);
+
         } catch (\Exception $e) {
+            \Log::error('Erreur changerMotDePasse: ' . $e->getMessage());
+            \Log::error('Fichier: ' . $e->getFile() . ':' . $e->getLine());
             return response()->json([
-                'message' => 'Erreur lors du changement de mot de passe.'
+                'message' => 'Erreur: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -159,14 +175,14 @@ class AuthController extends Controller
             ],
         ]);
     }
-   
-     /**
+
+    /**
      * Déconnecter l'utilisateur
      */
     public function deconnecter(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-        
+
         return response()->json([
             'message' => 'Déconnecté avec succès.'
         ], 200);
