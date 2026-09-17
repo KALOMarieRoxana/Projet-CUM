@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DemandeController;
 use App\Http\Controllers\DemandePdfController;
+use App\Http\Controllers\CitoyenController;
+use App\Http\Controllers\TypeActeAdminController;
 use App\Http\Controllers\NotificationAdminController;
 use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\AdminController;
@@ -150,6 +152,14 @@ Route::middleware(['auth', 'role:super_admin'])
         ])->name('demandes.update');
         Route::get('/archives', [DemandeController::class, 'archives'])->name('archives');
         Route::post('/archives/{id}/restaurer', [DemandeController::class, 'restaurer'])->name('archives.restaurer');
+
+         // ✅ CITOYENS
+        Route::get('/citoyens', [CitoyenController::class, 'index'])->name('citoyens.index');
+        Route::get('/citoyens/{id}', [CitoyenController::class, 'show'])->name('citoyens.show');
+        Route::post('/citoyens/{id}/desactiver', [CitoyenController::class, 'desactiver'])->name('citoyens.desactiver');
+        Route::post('/citoyens/{id}/reactiver', [CitoyenController::class, 'reactiver'])->name('citoyens.reactiver');
+        Route::delete('/citoyens/{id}', [CitoyenController::class, 'destroy'])->name('citoyens.destroy');
+    
          // ✅ Notifications Super Admin
         Route::get('/notifications/compteur', [NotificationAdminController::class, 'compteur'])->name('notifications.compteur');
         Route::get('/notifications', [NotificationAdminController::class, 'index'])->name('notifications.index');
@@ -168,6 +178,20 @@ Route::middleware(['auth', 'role:super_admin'])
         Route::post('/demandes/{id}/archiver', [DemandeController::class, 'archiver'])->name('demandes.archiver');
         Route::get('/demandes/export', [DemandeController::class, 'export'])->name('demandes.export');
         Route::get('/statistiques', [DashboardController::class, 'statistiques'])->name('statistiques');
+
+         // ✅ TYPES D'ACTES
+        Route::get('/types-actes', [TypeActeAdminController::class, 'index'])->name('types-actes.index');
+        Route::get('/types-actes/create', [TypeActeAdminController::class, 'create'])->name('types-actes.create');
+        Route::post('/types-actes', [TypeActeAdminController::class, 'store'])->name('types-actes.store');
+        Route::get('/types-actes/{id}/edit', [TypeActeAdminController::class, 'edit'])->name('types-actes.edit');
+        Route::put('/types-actes/{id}', [TypeActeAdminController::class, 'update'])->name('types-actes.update');
+        Route::delete('/types-actes/{id}', [TypeActeAdminController::class, 'destroy'])->name('types-actes.destroy');
+        Route::post('/types-actes/{id}/toggle-actif', [TypeActeAdminController::class, 'toggleActif'])->name('types-actes.toggle-actif');
+
+        // ✅ SUPPLÉMENTS
+        Route::post('/types-actes/{id}/supplements', [TypeActeAdminController::class, 'storeSupplement'])->name('types-actes.supplements.store');
+        Route::delete('/types-actes/supplements/{id}', [TypeActeAdminController::class, 'destroySupplement'])->name('types-actes.supplements.destroy');
+    
 
         // Gestion des administrateurs
         Route::get('/admins', [

@@ -16,14 +16,16 @@ class TypeActe extends Model
         'montantStandardMG',
         'montantExpressMG',
         'montantStandardFR',
-        'montantExpressFR'
+        'montantExpressFR',
+        'actif',
     ];
 
     protected $casts = [
         'montantStandardMG' => 'decimal:2',
         'montantExpressMG' => 'decimal:2',
         'montantStandardFR' => 'decimal:2',
-        'montantExpressFR' => 'decimal:2'
+        'montantExpressFR' => 'decimal:2',
+        'actif' => 'boolean',
     ];
 
     // ========== RELATIONS ==========

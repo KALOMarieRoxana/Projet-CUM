@@ -84,6 +84,13 @@ class AuthController extends Controller
             return response()->json(['message' => 'Email ou mot de passe incorrect.'], 401);
         }
 
+        // ✅ BLOQUER les comptes désactivés
+        if (!$citoyen->actif) {
+            return response()->json([
+                'message' => 'Votre compte a été désactivé. Contactez l\'administration.'
+            ], 403);
+        }
+
         $token = $citoyen->createToken('token_citoyen')->plainTextToken;
 
         return response()->json([

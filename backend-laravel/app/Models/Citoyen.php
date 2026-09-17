@@ -24,12 +24,26 @@ class Citoyen extends Authenticatable
         'password',
         'cin_recto',
         'cin_verso',
+        'actif',
+        'desactive_le',
+        'raison_desactivation',
+    ];
+
+    protected $casts = [
+        'actif'        => 'boolean',
+        'desactive_le' => 'datetime',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
     ];
+
+    // ✅ Accessor : statut lisible
+    public function getStatutCompteAttribute()
+    {
+        return $this->actif ? 'Actif' : 'Désactivé';
+    }
 
     public function getAuthPassword()
     {

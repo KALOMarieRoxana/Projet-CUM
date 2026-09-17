@@ -137,6 +137,66 @@
             flex-shrink: 0;
         }
 
+        /* ═══════════════════════════════════════════════════════════ */
+    /* STAT CHART CARDS (Able Pro Style)                           */
+    /* ═══════════════════════════════════════════════════════════ */
+    .stat-chart-card {
+        background: #FFFFFF;
+        border: 1px solid #E5E7EB;
+        border-radius: 14px;
+        padding: 20px 22px 12px 22px;
+        transition: all 0.2s;
+        overflow: hidden;
+        height: 100%;
+    }
+    .stat-chart-card:hover {
+        box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        transform: translateY(-2px);
+    }
+    .stat-chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+    .stat-chart-label {
+        font-size: 13px;
+        color: #6B7280;
+        font-weight: 500;
+        margin-top: 4px;
+    }
+    .stat-chart-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    .stat-chart-value {
+        font-size: 28px;
+        font-weight: 800;
+        color: #111827;
+        line-height: 1.1;
+        margin-bottom: 6px;
+        letter-spacing: -0.5px;
+    }
+    .stat-chart-evolution {
+        font-size: 12.5px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        margin-bottom: 8px;
+    }
+    .stat-chart-graph {
+        margin: 0 -22px -12px -22px;
+        padding: 0 12px;
+        opacity: 0.95;
+    }
+
         /* ✅ NOTIFICATIONS */
         .notification-wrapper {
             position: relative;
@@ -375,6 +435,16 @@
             <a href="{{ route('super-admin.admins.index') }}"
                class="nav-link {{ request()->routeIs('super-admin.admins*') ? 'active' : '' }}">
                 <i class="bi bi-people"></i> Gestion Administrateurs
+            </a>
+
+             <a href="{{ route('super-admin.citoyens.index') }}"
+                class="nav-link {{ request()->routeIs('super-admin.citoyens*') ? 'active' : '' }}">
+                <i class="bi bi-people-fill"></i> Citoyens
+            </a>
+
+            <a href="{{ route('super-admin.types-actes.index') }}"
+                class="nav-link {{ request()->routeIs('super-admin.types-actes*') ? 'active' : '' }}">
+                <i class="bi bi-file-earmark-text"></i> Types d'actes
             </a>
         @endif
 
