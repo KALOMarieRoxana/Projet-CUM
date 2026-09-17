@@ -2,16 +2,134 @@
 
 @section('title', 'Tableau de bord - Demandes')
 
+@push('styles')
+<style>
+    /* ═══════════════════════════════════════════════════════════ */
+    /* HERO BANNER — Jaune dégradé                                 */
+    /* ═══════════════════════════════════════════════════════════ */
+    .hero-banner {
+        position: relative;
+        overflow: hidden;
+        border-radius: 16px;
+        padding: 32px 40px;
+        margin-bottom: 24px;
+        background: linear-gradient(135deg, #B45309 0%, #D97706 40%, #F59E0B 75%, #FBBF24 100%);
+        box-shadow: 0 10px 30px rgba(217, 119, 6, 0.25);
+        min-height: 160px;
+        display: flex;
+        align-items: center;
+    }
+
+    .hero-banner::before {
+        content: '';
+        position: absolute;
+        top: -60px;
+        right: 15%;
+        width: 220px;
+        height: 220px;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .hero-banner::after {
+        content: '';
+        position: absolute;
+        bottom: -80px;
+        right: -40px;
+        width: 280px;
+        height: 280px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+        max-width: 60%;
+    }
+
+    .hero-title {
+        font-size: 26px;
+        font-weight: 800;
+        color: #FFFFFF;
+        margin: 0 0 8px 0;
+        letter-spacing: -0.3px;
+    }
+
+    .hero-subtitle {
+        font-size: 13.5px;
+        color: rgba(255, 255, 255, 0.9);
+        margin: 0 0 18px 0;
+        line-height: 1.5;
+        max-width: 480px;
+    }
+
+    .hero-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 20px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        color: #FFFFFF;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        backdrop-filter: blur(10px);
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    .hero-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-1px);
+        color: #FFFFFF;
+    }
+
+    .hero-decoration {
+        position: absolute;
+        right: 40px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1;
+        color: rgba(255, 255, 255, 0.2);
+        font-size: 140px;
+        line-height: 1;
+        pointer-events: none;
+    }
+
+    @media (max-width: 768px) {
+        .hero-content { max-width: 100%; }
+        .hero-decoration { display: none; }
+        .hero-title { font-size: 20px; }
+    }
+</style>
+@endpush
+
 @section('content')
-<div class="mb-4 d-flex justify-content-between align-items-center">
-    <div>
-        <h4 class="fw-bold mb-1">Tableau de bord</h4>
-        <p class="text-muted small mb-0">Vue d'ensemble et gestion des demandes reçues.</p>
+
+{{-- ═══════════════════════════════════════════════════════════ --}}
+{{-- BANNIÈRE HERO — JAUNE DÉGRADÉ                               --}}
+{{-- ═══════════════════════════════════════════════════════════ --}}
+<div class="hero-banner">
+    <div class="hero-content">
+        <h2 class="hero-title">Bienvenue dans votre espace Admin</h2>
+        <p class="hero-subtitle">
+            Gérez efficacement les demandes d'actes d'état civil, suivez les paiements
+            et administrez les services en toute simplicité.
+        </p>
+        <button type="button"
+                class="hero-btn"
+                data-bs-toggle="modal"
+                data-bs-target="#modalTarifsServices">
+            <i class="bi bi-gear-fill"></i> Modifier le prix des services
+        </button>
     </div>
-    <!-- Bouton d'ouverture du modal de gestion des tarifs par service -->
-    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTarifsServices">
-        <i class="bi bi-gear-fill me-1"></i> Modifier le prix des services
-    </button>
+
+    <div class="hero-decoration">
+        <i class="bi bi-bar-chart-line-fill"></i>
+    </div>
 </div>
 
 <!-- Messages de confirmation et d'erreur -->
@@ -118,7 +236,7 @@
                         <!-- Demandeur -->
                         <td>
                             <div class="fw-semibold">
-                                {{ $demande->citoyen?->nom ?? $demande->demandeur_nom ?? 'N/A' }} 
+                                {{ $demande->citoyen?->nom ?? $demande->demandeur_nom ?? 'N/A' }}
                                 {{ $demande->citoyen?->prenom ?? $demande->demandeur_prenom ?? '' }}
                             </div>
                             <small class="text-muted d-block">
@@ -257,7 +375,7 @@
                                                             <p class="mb-1"><strong>Date de création :</strong> {{ $demande->created_at?->format('d/m/Y à H:i') }}</p>
                                                         </div>
                                                         <div class="col-md-6 mt-2">
-                                                            <p class="mb-1"><strong>Statut actuel :</strong> 
+                                                            <p class="mb-1"><strong>Statut actuel :</strong>
                                                                 <span class="badge bg-secondary">{{ $demande->statut }}</span>
                                                             </p>
                                                         </div>
@@ -303,7 +421,7 @@
                 </div>
                 <div class="modal-body">
                     <p class="text-muted small">Ajustez le tarif unitaire en Ariary (Ar) pour chaque type d'acte d'état civil :</p>
-                    
+
                     @php
                         $servicesTarifs = $services ?? [
                             'acte_naissance' => 2000,
@@ -320,13 +438,13 @@
                                 {{ str_replace('_', ' ', $key) }}
                             </label>
                             <div class="input-group">
-                                <input type="number" 
-                                       step="100" 
-                                       min="0" 
-                                       name="tarifs[{{ $key }}]" 
-                                       id="prix_{{ $key }}" 
-                                       class="form-class form-control" 
-                                       value="{{ is_object($prix) ? $prix->prix_unitaire : $prix }}" 
+                                <input type="number"
+                                       step="100"
+                                       min="0"
+                                       name="tarifs[{{ $key }}]"
+                                       id="prix_{{ $key }}"
+                                       class="form-class form-control"
+                                       value="{{ is_object($prix) ? $prix->prix_unitaire : $prix }}"
                                        required>
                                 <span class="input-group-text">Ar</span>
                             </div>

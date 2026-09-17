@@ -2,17 +2,129 @@
 
 @section('title', 'Tableau de bord - Super Admin')
 
+@push('styles')
+<style>
+    /* ═══════════════════════════════════════════════════════════ */
+    /* HERO BANNER — Style Able Pro                                */
+    /* ═══════════════════════════════════════════════════════════ */
+    .hero-banner {
+        position: relative;
+        overflow: hidden;
+        border-radius: 16px;
+        padding: 32px 40px;
+        margin-bottom: 24px;
+        background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 50%, #4F46E5 100%);
+        box-shadow: 0 10px 30px rgba(37, 99, 235, 0.25);
+        min-height: 160px;
+        display: flex;
+        align-items: center;
+    }
+
+    .hero-banner::before {
+        content: '';
+        position: absolute;
+        top: -60px;
+        right: 15%;
+        width: 220px;
+        height: 220px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .hero-banner::after {
+        content: '';
+        position: absolute;
+        bottom: -80px;
+        right: -40px;
+        width: 280px;
+        height: 280px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+        max-width: 60%;
+    }
+
+    .hero-title {
+        font-size: 26px;
+        font-weight: 800;
+        color: #FFFFFF;
+        margin: 0 0 8px 0;
+        letter-spacing: -0.3px;
+    }
+
+    .hero-subtitle {
+        font-size: 13.5px;
+        color: rgba(255, 255, 255, 0.85);
+        margin: 0 0 18px 0;
+        line-height: 1.5;
+        max-width: 480px;
+    }
+
+    .hero-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 20px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #FFFFFF;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        backdrop-filter: blur(10px);
+        transition: all 0.2s;
+    }
+    .hero-btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-1px);
+        color: #FFFFFF;
+    }
+
+    .hero-decoration {
+        position: absolute;
+        right: 40px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1;
+        color: rgba(255, 255, 255, 0.15);
+        font-size: 140px;
+        line-height: 1;
+        pointer-events: none;
+    }
+
+    @media (max-width: 768px) {
+        .hero-content { max-width: 100%; }
+        .hero-decoration { display: none; }
+        .hero-title { font-size: 20px; }
+    }
+</style>
+@endpush
+
 @section('content')
 
-{{-- ═══════════ HEADER ═══════════ --}}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="fw-bold mb-1">Tableau de bord Super Admin</h4>
-        <p class="text-muted small mb-0">Vue d'ensemble globale de la plateforme et gestion administrative.</p>
+{{-- ═══════════════════════════════════════════════════════════ --}}
+{{-- BANNIÈRE HERO — Style Able Pro                              --}}
+{{-- ═══════════════════════════════════════════════════════════ --}}
+<div class="hero-banner">
+    <div class="hero-content">
+        <h2 class="hero-title">Tableau de bord Super Admin</h2>
+        <p class="hero-subtitle">
+            Vue d'ensemble globale de la plateforme et gestion administrative.
+        </p>
+        <a href="{{ route('super-admin.admins.index') }}" class="hero-btn">
+            <i class="bi bi-people-fill"></i> Gérer tous les administrateurs
+        </a>
     </div>
-    <a href="{{ route('super-admin.admins.index') }}" class="btn btn-primary">
-        <i class="bi bi-people-fill me-1"></i> Gérer tous les administrateurs
-    </a>
+
+    <div class="hero-decoration">
+        <i class="bi bi-speedometer2"></i>
+    </div>
 </div>
 
 {{-- ═══════════ ALERTES ═══════════ --}}
@@ -183,11 +295,10 @@
                             <small class="text-muted">{{ $demande->created_at->format('H:i') }}</small>
                         </td>
 
-                        {{-- Actions (vertical, texte simple) --}}
+                        {{-- Actions --}}
                         <td class="text-end pe-3" style="min-width: 100px;">
                             <div class="d-flex flex-column gap-1 align-items-end">
 
-                                {{-- Voir --}}
                                 <a href="{{ route('super-admin.demandes.show', $demande->id_demande ?? $demande->id) }}"
                                    class="btn btn-sm btn-link text-decoration-none p-0"
                                    style="font-size: 12px; color: #374151;">
@@ -195,7 +306,6 @@
                                 </a>
 
                                 @if($demande->statut === 'en_attente')
-                                    {{-- Accepter --}}
                                     <button type="button"
                                             class="btn btn-sm btn-link text-decoration-none p-0"
                                             style="font-size: 12px; color: #374151;"
@@ -207,7 +317,6 @@
                                         Accepter
                                     </button>
 
-                                    {{-- Refuser --}}
                                     <button type="button"
                                             class="btn btn-sm btn-link text-decoration-none p-0"
                                             style="font-size: 12px; color: #374151;"
@@ -235,7 +344,7 @@
         </table>
     </div>
 
-    {{-- ✅ Pagination corrigée --}}
+    {{-- Pagination --}}
     @if(method_exists($demandes, 'hasPages') && $demandes->hasPages())
         <div class="mt-3 d-flex justify-content-center">
             {{ $demandes->links('pagination::bootstrap-5') }}

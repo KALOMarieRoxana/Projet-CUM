@@ -10,6 +10,7 @@ use App\Models\Mariage;
 use App\Models\Deces;
 use App\Models\Divorce;
 use App\Models\TypeActe;
+use App\Models\NotificationAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -48,7 +49,7 @@ class DemandeController extends Controller
 
         $demandes = $query->latest()->paginate(15);
 
-        // ✅ 2. Compteurs GLOBAUX (indépendants des filtres)
+        // ✅ Compteurs GLOBAUX
         $stats = [
             'total'      => Demande::count(),
             'en_attente' => Demande::whereIn('statut', ['en_attente', 'en attente'])->count(),
@@ -56,7 +57,7 @@ class DemandeController extends Controller
             'refusee'    => Demande::whereIn('statut', ['refusée', 'refusee'])->count(),
         ];
 
-         // ✅ 3. Choisir la vue selon la route appelée
+        // ✅ Choisir la vue selon la route appelée
         if ($request->routeIs('super-admin.*')) {
             return view('super-admin.demandes', compact('demandes', 'stats'));
         }
@@ -75,10 +76,8 @@ class DemandeController extends Controller
         ]);
 
         $demande = Demande::findOrFail($id);
-
-        // ✅ AJOUTER CETTE LIGNE :
         $ancienStatut = $demande->statut;
-        
+
         $demande->update([
             'statut'            => $request->statut,
             'commentaire_admin' => $request->commentaire_admin,
@@ -91,20 +90,20 @@ class DemandeController extends Controller
             try {
                 $pdfService = new \App\Services\PdfService();
                 $filename = $pdfService->genererPdf($demande);
-            
+
                 \Log::info('✅ PDF généré:', [
                     'reference' => $demande->reference,
-                    'filename' => $filename,
+                    'filename'  => $filename,
                 ]);
             } catch (\Exception $e) {
                 \Log::error('❌ Erreur génération PDF: ' . $e->getMessage());
             }
         }
 
-        // ✅ 2. ENVOYER LA NOTIFICATION AU CITOYEN
+        // ✅ ENVOYER LA NOTIFICATION AU CITOYEN
         try {
             $citoyen = $demande->citoyen;
-        
+
             if ($citoyen) {
                 if ($request->statut === 'acceptée') {
                     $citoyen->notify(new \App\Notifications\DemandeAccepteeNotification($demande->fresh()));
@@ -118,7 +117,6 @@ class DemandeController extends Controller
             \Log::error('❌ Erreur notification: ' . $e->getMessage());
         }
 
-        
         if ($request->wantsJson()) {
             return response()->json([
                 'message' => 'Statut mis à jour avec succès.',
@@ -147,13 +145,12 @@ class DemandeController extends Controller
                 ], 401);
             }
 
-            // Récupération sécurisée de l'ID citoyen
             $citoyenId = $citoyen->id_citoyens ?? $citoyen->id;
 
             Log::info('Citoyen connecté:', ['citoyen_id' => $citoyenId, 'email' => $citoyen->email]);
 
             return DB::transaction(function () use ($request, $citoyen, $citoyenId) {
-                
+
                 // 1. Génération du numéro de référence unique
                 $reference = strtoupper(substr(uniqid(), 0, 6));
 
@@ -178,18 +175,15 @@ class DemandeController extends Controller
                 ]);
 
                 // 3. Traitement des actes envoyés
-                // Si le format est 'actes' (tableau) ou 'demandes' (ancien format)
                 $actesInput = [];
                 if ($request->has('actes')) {
                     $actesInput = $request->actes;
                 } elseif ($request->has('demandes')) {
                     $actesInput = $request->demandes;
                 } else {
-                    // Format unique (une seule demande)
                     $actesInput = [$request->all()];
                 }
 
-                // Si actesInput est un objet, le convertir en tableau
                 if (is_object($actesInput)) {
                     $actesInput = $actesInput->toArray();
                 }
@@ -198,36 +192,30 @@ class DemandeController extends Controller
                 $totalNombreActes = 0;
 
                 foreach ($actesInput as $item) {
-                    // Si item est un objet, le convertir en tableau
                     if (is_object($item)) {
                         $item = $item->toArray();
                     }
 
-                    // Récupération du type d'acte
                     $typeActeNom = strtolower(
                         $item['type_acte']
                         ?? ($item['details']['type_acte'] ?? null)
                         ?? $request->type_acte
                         ?? 'naissance'
                     );
-                    
+
                     $typeActe = TypeActe::where('type_acte', $typeActeNom)->first();
-                    // Récupération de la référence des tarifs pour ce type d'acte
 
                     if (!$typeActe) {
                         throw new \Exception("Type d'acte non trouvé: {$typeActeNom}");
                     }
 
-                    // Langue (FR ou MG) et Service (standard ou express)
                     $langue = strtoupper($item['langue'] ?? $request->langue ?? 'MG');
                     $service = strtolower($item['service'] ?? $request->service ?? 'standard');
 
-                    // Calcul du prix unitaire via la méthode du modèle TypeActe
                     $prixUnitaire = $typeActe->calculerPrix($langue, $service);
 
                     $quantite = $item['quantite'] ?? $item['nbre_com'] ?? 1;
 
-                    // ✅ Récupérer le supplément
                     $supplementId = $item['supplement_id'] ?? null;
                     $quantiteSupplement = intval($item['quantite_supplement'] ?? 0);
                     $prixActe = floatval($item['prix_acte'] ?? 0);
@@ -236,7 +224,6 @@ class DemandeController extends Controller
                     }
                     $prixSupplement = 0;
 
-                    // Calculer le prix du suplement si sélectionné
                     if ($supplementId) {
                         $supplement = \App\Models\TypeActeSupplement::find($supplementId);
                         if ($supplement) {
@@ -246,7 +233,6 @@ class DemandeController extends Controller
                             $champPrix = "prix_{$serviceLower}_{$langueLower}";
                             $prixSupplement = floatval($supplement->$champPrix ?? 0);
 
-                              // ✅ Debug
                             \Log::info('Calcul prix supplément:', [
                                 'supplement_id' => $supplementId,
                                 'champ' => $champPrix,
@@ -255,10 +241,9 @@ class DemandeController extends Controller
                             ]);
                         }
                     }
-                    // Sous total = (prix acte * qté) + (prix supplément * qt supplément)
+
                     $sousTotal = ($prixActe * $quantite) + ($prixSupplement * $quantiteSupplement);
 
-                     // ✅ Log pour vérifier
                     \Log::info('📊 Calcul ligne:', [
                         'type_acte' => $typeActeNom,
                         'prixActe' => $prixActe,
@@ -268,7 +253,6 @@ class DemandeController extends Controller
                         'sousTotal' => $sousTotal,
                     ]);
 
-                    // Champs communs insérés dans les tables spécifiques d'actes
                     $commonData = [
                         'langue'            => $langue,
                         'type_service'      => $service,
@@ -284,7 +268,6 @@ class DemandeController extends Controller
                     $acteModel = null;
                     $details = $item['details'] ?? $item;
 
-                    // Instanciation de l'acte selon son type avec recherche approfondie des clés
                     switch (strtolower($typeActeNom)) {
                         case 'naissance':
                             $acteModel = Naissance::create(array_merge($commonData, [
@@ -329,7 +312,6 @@ class DemandeController extends Controller
                         case 'divorces':
                             Log::info('Details pour divorce:', ['details' => $details]);
                             Log::info('CommonData pour divorce:', ['commonData' => $commonData]);
-                            // S'assurer que $details est un tableau
                             $details = (array) $details;
 
                             $acteModel = Divorce::create(array_merge($commonData, [
@@ -340,7 +322,7 @@ class DemandeController extends Controller
                                 'date_mariage'  => $details['date_mariage'] ?? null,
                                 'date_jugement' => $details['date_demande_divorce'] ?? null,
                                 'motif'         => $details['motif'] ?? null,
-                                'tribunal'      => $details['tribunal'] ?? 'À préciser',      // ✅ Ajout
+                                'tribunal'      => $details['tribunal'] ?? 'À préciser',
                                 'num_jugement'  => $details['num_jugement'] ?? 'Non renseigné',
                             ]));
                             break;
@@ -349,22 +331,21 @@ class DemandeController extends Controller
                             throw new \Exception("Type d'acte non reconnu: {$typeActeNom}");
                     }
 
-                    // Enregistrement de la ligne pivot polymorphique dans demande_actes
                     if ($acteModel) {
                         DemandeActe::create([
-                            'demande_id'    => $demande->id_demande ?? $demande->id,
-                            'type_acte_id'  => $typeActe->id,
-                            'supplement_id'       => $supplementId, 
-                            'acte_type'     => get_class($acteModel),
-                            'acte_id'       => $acteModel->getKey(),
-                            'langue'        => $langue,
+                            'demande_id'          => $demande->id_demande ?? $demande->id,
+                            'type_acte_id'        => $typeActe->id,
+                            'supplement_id'       => $supplementId,
+                            'acte_type'           => get_class($acteModel),
+                            'acte_id'             => $acteModel->getKey(),
+                            'langue'              => $langue,
                             'prix_acte'           => $prixActe,
                             'prix_supplement'     => $prixSupplement,
-                            'prix_unitaire' => $prixActe + $prixSupplement,
+                            'prix_unitaire'       => $prixActe + $prixSupplement,
                             'quantite_supplement' => $quantiteSupplement,
-                            'quantite'      => $quantite,
-                            'sous_total'    => $sousTotal,
-                            'statut'        => 'en_attente',
+                            'quantite'            => $quantite,
+                            'sous_total'          => $sousTotal,
+                            'statut'              => 'en_attente',
                         ]);
                     }
 
@@ -377,11 +358,8 @@ class DemandeController extends Controller
                     'prix_total'   => $prixTotalGlobal,
                     'nombre_actes' => $totalNombreActes,
                 ]);
-                
-                // ============================================================
-                // 5️⃣ CALCUL DE L'ESTIMATION (AJOUTER ICI)
-                // Express = 24h, Standard = 72h
-                // ============================================================
+
+                // 5️⃣ CALCUL DE L'ESTIMATION
                 $delaiHeures = $request->service === 'express' ? 24 : 72;
                 $dateEstimation = now()->addHours($delaiHeures);
 
@@ -392,6 +370,7 @@ class DemandeController extends Controller
                     'date_estimation'     => $dateEstimation,
                     'estimation_envoyee'  => false,
                 ]);
+
                 \Log::info('📅 Estimation programmée:', [
                     'reference'       => $demande->reference,
                     'service'         => $request->service,
@@ -399,10 +378,27 @@ class DemandeController extends Controller
                     'date_estimation' => $dateEstimation->toDateTimeString(),
                 ]);
 
+                // ═══════════════════════════════════════════════════════════
+                // ✅ CRÉER UNE NOTIFICATION POUR LES ADMINS
+                // ═══════════════════════════════════════════════════════════
+                try {
+                    NotificationAdmin::create([
+                        'type'       => 'demande_recue',
+                        'titre'      => 'Nouvelle demande reçue',
+                        'message'    => "Une nouvelle demande {$reference} a été soumise par {$request->demandeur_prenom} {$request->demandeur_nom}.",
+                        'demande_id' => $demande->id_demande ?? $demande->id,
+                        'reference'  => $reference,
+                        'lue'        => false,
+                    ]);
+                    \Log::info('🔔 Notification admin créée pour: ' . $reference);
+                } catch (\Exception $e) {
+                    \Log::error('❌ Erreur création notification admin: ' . $e->getMessage());
+                }
+
                 return response()->json([
-                    'message' => 'Demande enregistrée avec succès.',
+                    'message'   => 'Demande enregistrée avec succès.',
                     'reference' => $reference,
-                    'demande' => $demande->load('demandeActes.acte')
+                    'demande'   => $demande->load('demandeActes.acte')
                 ], 201);
             });
 
@@ -452,13 +448,12 @@ class DemandeController extends Controller
     {
         $citoyen = Auth::user();
         if (!$citoyen) {
-         return response()->json(['message' => 'Non authentifié'], 401);
+            return response()->json(['message' => 'Non authentifié'], 401);
         }
 
         $citoyenId = $citoyen->id_citoyens ?? $citoyen->id;
         $periode = $request->get('periode', '12m');
 
-        // ⚠️ Attention aux accents dans le statut : 'acceptée' vs 'acceptee'
         $statuts = [
             'acceptee'  => ['acceptée', 'acceptee', 'accepté', 'accepte'],
             'refusee'   => ['refusée', 'refusee', 'refusé', 'refuse'],
@@ -472,7 +467,6 @@ class DemandeController extends Controller
         $refusees  = (clone $query)->whereIn('statut', $statuts['refusee'])->count();
         $enAttente = (clone $query)->whereIn('statut', $statuts['attente'])->count();
 
-        // ✅ Par mois (12 derniers mois)
         $parMois = [];
         for ($i = 11; $i >= 0; $i--) {
             $date = now()->subMonths($i);
@@ -508,7 +502,6 @@ class DemandeController extends Controller
                 return response()->json(['message' => 'Non authentifié.'], 401);
             }
 
-            // ✅ Normaliser le rôle (gérer underscore/tiret/espaces/casse)
             $role = strtolower(str_replace(['-', ' '], '_', $user->role ?? 'citoyen'));
 
             \Log::info('🔍 show() demandé', [
@@ -518,7 +511,6 @@ class DemandeController extends Controller
                 'role_normalise' => $role,
             ]);
 
-            // ✅ Admin & Super Admin & Agent → accès TOTAL
             if (in_array($role, ['admin', 'super_admin', 'agent'])) {
 
                 $demande = Demande::with([
@@ -534,22 +526,18 @@ class DemandeController extends Controller
                     return redirect()->back()->with('error', 'Demande introuvable.');
                 }
 
-                // ✅ Retour JSON si API
                 if (request()->wantsJson()) {
                     return response()->json(['demande' => $demande], 200);
                 }
 
-                // ✅ Vue selon le rôle
                 $vue = $role === 'super_admin'
                     ? 'super-admin.demandes.show'
                     : 'admin.demandes_show';
 
-                // Si la vue super-admin n'existe pas, on fallback sur admin
                 if (!view()->exists($vue)) {
                     $vue = 'admin.demandes_show';
                 }
 
-                // Si admin.demandes_show n'existe pas non plus → vue de secours
                 if (!view()->exists($vue)) {
                     \Log::warning('⚠️ Aucune vue de détail trouvée, fallback');
                     return response()->json(['demande' => $demande], 200);
@@ -558,7 +546,6 @@ class DemandeController extends Controller
                 return view($vue, compact('demande'));
             }
 
-            // ✅ Citoyen → uniquement ses demandes
             $userId = $user->id_citoyens ?? $user->id;
 
             $demande = Demande::where('citoyen_id', $userId)
@@ -591,7 +578,7 @@ class DemandeController extends Controller
     {
         try {
             $citoyen = Auth::guard('citoyen')->user();
-        
+
             if (!$citoyen) {
                 return response()->json(['success' => false], 401);
             }
@@ -650,6 +637,107 @@ class DemandeController extends Controller
             return response()->json([
                 'message' => 'Erreur lors de l\'annulation de la demande.'
             ], 500);
+        }
+    }
+    /**
+    * ═══════════════════════════════════════════════════════════
+    * ARCHIVER UNE DEMANDE
+    * ═══════════════════════════════════════════════════════════
+    */
+    public function archiver($id)
+    {
+        try {
+            $demande = Demande::findOrFail($id);
+
+            $ancienStatut = $demande->statut;
+
+            // ✅ Utiliser une valeur déjà acceptée par l'ENUM
+            $demande->update([
+                'statut_avant_archive' => $ancienStatut,  
+                'statut' => 'archivée',   // ⬅️ valeur existante
+            ]);
+
+            \Log::info('📦 Demande archivée:', [
+                'reference' => $demande->reference,
+                'ancien'       => $ancienStatut,
+                'nouveau'      => 'archivée',
+            ]);
+
+            return redirect()->back()->with('success', 'Demande archivée avec succès.');
+
+        } catch (\Exception $e) {
+            \Log::error('❌ Erreur archivage: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur: ' . $e->getMessage());
+        }
+    }
+    /**
+    * ═══════════════════════════════════════════════════════════
+    * LISTE DES DEMANDES ARCHIVÉES
+    * ═══════════════════════════════════════════════════════════
+    */
+    public function archives(Request $request)
+    {
+        // ✅ Total global des archivées
+        $totalArchive = Demande::where('statut', 'archivée')->count();
+
+        // ✅ Archivées qui étaient ACCEPTÉES
+        $archiveesAcceptees = Demande::with(['citoyen', 'demandeActes.typeActe'])
+            ->where('statut', 'archivée')
+            ->whereIn('statut_avant_archive', ['acceptée', 'acceptee'])
+            ->latest('updated_at')
+            ->get();
+
+        // ✅ Archivées qui étaient REFUSÉES
+        $archiveesRefusees = Demande::with(['citoyen', 'demandeActes.typeActe'])
+            ->where('statut', 'archivée')
+            ->whereIn('statut_avant_archive', ['refusée', 'refusee'])
+            ->latest('updated_at')
+            ->get();
+
+        // ✅ Statistiques avec les BONNES clés
+        $stats = [
+            'total'      => $totalArchive,
+            'acceptees'  => $archiveesAcceptees->count(),
+            'refusees'   => $archiveesRefusees->count(),
+        ];
+
+        // ✅ Choisir la vue selon la route
+        if ($request->routeIs('super-admin.*')) {
+            return view('super-admin.archives', compact('stats', 'archiveesAcceptees', 'archiveesRefusees'));
+        }
+
+        return view('admin.archives', compact('stats', 'archiveesAcceptees', 'archiveesRefusees'));
+    }
+
+    /**
+    * ═══════════════════════════════════════════════════════════
+    * RESTAURER UNE DEMANDE ARCHIVÉE
+    * ═══════════════════════════════════════════════════════════
+    */
+    public function restaurer($id)
+    {
+        try {
+            $demande = Demande::findOrFail($id);
+
+            if ($demande->statut !== 'archivée') {
+                return redirect()->back()->with('error', 'Cette demande n\'est pas archivée.');
+            }
+
+            // ✅ Restaurer en "acceptée" par défaut
+            $demande->update([
+                'statut' => 'acceptée',
+            ]);
+
+            \Log::info('♻️ Demande restaurée:', [
+                'reference' => $demande->reference,
+                'id'        => $id,
+            ]);
+
+            return redirect()->back()->with('success', "Demande {$demande->reference} restaurée avec succès.");
+
+        } catch (\Exception $e) {
+            \Log::error('❌ Erreur restauration: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erreur: ' . $e->getMessage());
         }
     }
 }

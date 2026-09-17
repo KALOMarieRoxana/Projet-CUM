@@ -2,6 +2,83 @@
 
 @section('title', 'Toutes les demandes')
 
+@push('styles')
+<style>
+    /* ═══════════════════════════════════════════════════════════ */
+    /* BADGES SERVICE                                              */
+    /* ═══════════════════════════════════════════════════════════ */
+    .badge-service {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .badge-service i { font-size: 11px; }
+    .badge-service.badge-express {
+        background: #FEF3C7;
+        color: #D97706;
+    }
+    .badge-service.badge-standard {
+        background: #F3F4F6;
+        color: #4B5563;
+    }
+
+    /* ═══════════════════════════════════════════════════════════ */
+    /* BADGES STATUT                                               */
+    /* ═══════════════════════════════════════════════════════════ */
+    .badge-statut {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .badge-statut i { font-size: 11px; }
+    .badge-statut.badge-statut-acceptee { background: #D1FAE5; color: #059669; }
+    .badge-statut.badge-statut-attente  { background: #FEF3C7; color: #D97706; }
+    .badge-statut.badge-statut-refusee  { background: #FEE2E2; color: #DC2626; }
+    .badge-statut.badge-statut-partielle { background: #DBEAFE; color: #2563EB; }
+    .badge-statut.badge-statut-archivee { background: #E5E7EB; color: #6B7280; }
+
+    /* ═══════════════════════════════════════════════════════════ */
+    /* ACTES DEMANDÉS — SANS COULEUR                              */
+    /* ═══════════════════════════════════════════════════════════ */
+    .acte-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #374151;
+        margin-bottom: 2px;
+    }
+    .acte-item .acte-nom {
+        font-weight: 700;
+        color: #000000;
+    }
+    .acte-item .qte {
+        font-size: 11px;
+        color: #9CA3AF;
+        font-weight: 400;
+    }
+    .acte-separator {
+        color: #D1D5DB;
+        margin: 0 2px;
+    }
+    .actes-total {
+        font-size: 11px;
+        color: #9CA3AF;
+        margin-top: 2px;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -20,17 +97,16 @@
     <div class="alert alert-danger">{{ session('error') }}</div>
 @endif
 
-{{-- ✅ CALCUL DES STATISTIQUES (AJOUTÉ) --}}
+{{-- ✅ STATISTIQUES --}}
 @php
     $statistiques = $statistiques ?? [
-        'total'      => \App\Models\Demande::count(),
+        'total'      => \App\Models\Demande::where('statut', '!=', 'archivée')->count(),
         'en_attente' => \App\Models\Demande::whereIn('statut', ['en_attente', 'en attente'])->count(),
         'acceptee'   => \App\Models\Demande::whereIn('statut', ['acceptée', 'acceptee'])->count(),
         'refusee'    => \App\Models\Demande::whereIn('statut', ['refusée', 'refusee'])->count(),
     ];
 @endphp
 
-<!-- Statistiques -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="stat-card">
@@ -70,8 +146,7 @@
     </div>
 </div>
 
-
-<!-- Filtres -->
+{{-- ✅ FILTRES --}}
 <div class="content-card mb-4">
     <div class="p-3">
         <form method="GET" action="{{ route('super-admin.demandes') }}" class="row g-2">
@@ -114,7 +189,7 @@
     </div>
 </div>
 
-<!-- Tableau -->
+{{-- ✅ TABLEAU --}}
 <div class="content-card">
     <div class="d-flex justify-content-between align-items-center p-3 border-bottom flex-wrap gap-2">
         <div>
@@ -163,6 +238,7 @@
                     @php
                         $items = $demande->demandeActes ?? $demande->items ?? collect();
                         $nbActes = $items->sum('quantite');
+                        $estArchivee = $demande->statut === 'archivée';
                     @endphp
                     <tr data-statut="{{ $demande->statut }}">
                         <td class="ps-3">
@@ -178,47 +254,91 @@
                             {{ $demande->demandeur_prenom }} {{ $demande->demandeur_nom }}<br>
                             <small class="text-muted">{{ $demande->demandeur_contact }}</small>
                         </td>
+
+                        {{-- ✅ ACTES DEMANDÉS — SANS COULEUR --}}
                         <td>
                             @foreach($items as $item)
-                                <span class="badge bg-info mb-1">
-                                    {{ $item->typeActe->nom ?? $item->type_acte ?? 'Acte' }}
-                                    <span class="badge bg-light text-dark">x{{ $item->quantite }}</span>
-                                </span>
-                                <br>
+                                <div class="acte-item">
+                                    📄 <span class="acte-nom">{{ $item->typeActe->nom ?? $item->type_acte ?? 'Acte' }}</span>
+                                    <span class="qte">× {{ $item->quantite }}</span>
+                                </div>
                             @endforeach
-                            <small class="text-muted">{{ $nbActes }} acte(s)</small>
+                            <div class="actes-total">{{ $nbActes }} acte(s) demandé(s)</div>
                         </td>
+
+                        {{-- ✅ SERVICE --}}
                         <td>
                             @if($demande->service == 'express')
-                                <span class="badge bg-warning">⚡ Express</span>
+                                <span class="badge-service badge-express">
+                                    <i class="bi bi-lightning-charge-fill"></i> Express
+                                </span>
                             @else
-                                <span class="badge bg-secondary">Standard</span>
+                                <span class="badge-service badge-standard">
+                                    <i class="bi bi-shield-fill"></i> Standard
+                                </span>
                             @endif
                         </td>
+
+                        {{-- ✅ PRIX --}}
                         <td>
-                            <strong>{{ number_format($demande->prix_total ?? 0, 0, ',', ' ') }} Ar</strong>
+                            <strong style="color: #111827; font-size: 14px;">
+                                {{ number_format($demande->prix_total ?? 0, 0, ',', ' ') }}
+                            </strong>
+                            <br>
+                            <small style="color: #9CA3AF; font-size: 11px;">Ar</small>
                         </td>
+
+                        {{-- ✅ STATUT --}}
                         <td>
-                            @if ($demande->statut === 'en attente')
-                                <span class="badge bg-warning">⏳ En attente</span>
-                            @elseif (in_array($demande->statut, ['acceptée', 'acceptee']))
-                                <span class="badge bg-success">✅ Acceptée</span>
+                            @if (in_array($demande->statut, ['acceptée', 'acceptee']))
+                                <span class="badge-statut badge-statut-acceptee">
+                                    <i class="bi bi-check-circle-fill"></i> Acceptée
+                                </span>
+                            @elseif (in_array($demande->statut, ['en_attente', 'en attente']))
+                                <span class="badge-statut badge-statut-attente">
+                                    <i class="bi bi-clock-fill"></i> En attente
+                                </span>
                             @elseif (in_array($demande->statut, ['refusée', 'refusee']))
-                                <span class="badge bg-danger">❌ Refusée</span>
+                                <span class="badge-statut badge-statut-refusee">
+                                    <i class="bi bi-x-circle-fill"></i> Refusée
+                                </span>
                             @elseif ($demande->statut === 'partiellement_traitée')
-                                <span class="badge bg-info">🔄 Partielle</span>
+                                <span class="badge-statut badge-statut-partielle">
+                                    <i class="bi bi-arrow-repeat"></i> Partielle
+                                </span>
+                            @elseif ($estArchivee)
+                                <span class="badge-statut badge-statut-archivee">
+                                    <i class="bi bi-archive-fill"></i> Archivée
+                                </span>
+                            @else
+                                <span class="text-muted" style="font-size: 11px;">{{ $demande->statut }}</span>
                             @endif
                         </td>
+
+                        {{-- ✅ TRAITÉ PAR --}}
                         <td>
                             @if($demande->traitePar)
                                 {{ $demande->traitePar->name ?? '-' }}
                                 <br>
-                                <small class="text-muted">{{ $demande->date_traitement ? $demande->date_traitement->format('d/m/Y H:i') : '' }}</small>
+                                <small class="text-muted">
+                                    {{ $demande->date_traitement ? $demande->date_traitement->format('d/m/Y H:i') : '' }}
+                                </small>
                             @else
                                 <span class="text-muted">Non traité</span>
                             @endif
                         </td>
-                        <td>{{ $demande->created_at ? $demande->created_at->format('d/m/Y H:i') : '-' }}</td>
+
+                        {{-- ✅ DATE --}}
+                        <td>
+                            <div style="color: #111827; font-size: 13px;">
+                                {{ $demande->created_at ? $demande->created_at->format('d/m/Y') : '-' }}
+                            </div>
+                            <small style="color: #9CA3AF; font-size: 11px;">
+                                {{ $demande->created_at ? $demande->created_at->format('H:i') : '' }}
+                            </small>
+                        </td>
+
+                        {{-- ✅ ACTIONS --}}
                         <td class="text-end pe-3">
                             <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#detailsModal{{ $demande->id_demande }}">
                                 <i class="bi bi-eye"></i>
@@ -230,7 +350,8 @@
                                 </a>
                             @endif
 
-                            @if($demande->statut != 'en attente')
+                            {{-- ✅ Bouton Archiver : uniquement si PAS en attente et PAS déjà archivée --}}
+                            @if($demande->statut != 'en attente' && !$estArchivee)
                                 <form action="{{ route('super-admin.demandes.archiver', $demande->id_demande) }}" method="POST" class="d-inline">
                                     @csrf
                                     <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Archiver cette demande ?')">
@@ -259,9 +380,9 @@
     @endif
 </div>
 
-<!-- ========================================================== -->
-<!-- MODALS DÉTAILS                                              -->
-<!-- ========================================================== -->
+{{-- ═══════════════════════════════════════════════════════════ --}}
+{{-- MODALS DÉTAILS                                              --}}
+{{-- ═══════════════════════════════════════════════════════════ --}}
 @foreach($demandes as $demande)
 @php
     $items = $demande->demandeActes ?? $demande->items ?? collect();
@@ -305,6 +426,8 @@
                                     <span class="badge bg-danger">❌ Refusée</span>
                                 @elseif($demande->statut == 'partiellement_traitée')
                                     <span class="badge bg-info">🔄 Partiellement traitée</span>
+                                @elseif($demande->statut == 'archivée')
+                                    <span class="badge bg-secondary">📦 Archivée</span>
                                 @endif
                             </td></tr>
                             <tr><td><strong>Date:</strong></td><td>{{ $demande->created_at ? $demande->created_at->format('d/m/Y H:i') : '-' }}</td></tr>
@@ -476,7 +599,8 @@
                     </form>
                 @endif
 
-                @if($demande->statut != 'en attente')
+                {{-- ✅ Bouton Archiver dans le modal : uniquement si PAS en attente et PAS déjà archivée --}}
+                @if($demande->statut != 'en attente' && $demande->statut != 'archivée')
                     <form action="{{ route('super-admin.demandes.archiver', $demande->id_demande) }}" method="POST" class="d-inline">
                         @csrf
                         <button type="submit" class="btn btn-secondary" onclick="return confirm('Archiver cette demande ?')">

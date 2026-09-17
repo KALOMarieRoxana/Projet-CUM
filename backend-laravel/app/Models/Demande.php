@@ -46,6 +46,7 @@ class Demande extends Model
         'est_paye',
         'date_paiement',
         'encaisse_par',
+        'statut_avant_archive',
     ];
 
     protected $casts = [

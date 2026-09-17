@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DemandeController;
 use App\Http\Controllers\DemandePdfController;
+use App\Http\Controllers\NotificationAdminController;
 use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProfileController;
@@ -92,7 +93,17 @@ Route::middleware(['auth', 'role:admin'])
             DemandeController::class,
             'update'
         ])->name('demandes.update');
+        Route::get('/archives', [DemandeController::class, 'archives'])->name('archives');
+        Route::post('/archives/{id}/restaurer', [DemandeController::class, 'restaurer'])->name('archives.restaurer');
+        
         Route::get('/statistiques', [DashboardController::class, 'statistiques'])->name('statistiques');
+
+         // ✅ Notifications Admin
+        Route::get('/notifications/compteur', [NotificationAdminController::class, 'compteur'])->name('notifications.compteur');
+        Route::get('/notifications', [NotificationAdminController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/{id}/marquer-lue', [NotificationAdminController::class, 'marquerLue'])->name('notifications.marquer-lue');
+        Route::post('/notifications/marquer-toutes-lues', [NotificationAdminController::class, 'marquerToutesLues'])->name('notifications.marquer-toutes-lues');
+    
 
        Route::get('/paiements/liste', [PaiementController::class, 'liste'])->name('paiements.liste');
         Route::get('/paiements', [PaiementController::class, 'index'])->name('paiements.index');
@@ -137,6 +148,13 @@ Route::middleware(['auth', 'role:super_admin'])
             DemandeController::class,
             'update'
         ])->name('demandes.update');
+        Route::get('/archives', [DemandeController::class, 'archives'])->name('archives');
+        Route::post('/archives/{id}/restaurer', [DemandeController::class, 'restaurer'])->name('archives.restaurer');
+         // ✅ Notifications Super Admin
+        Route::get('/notifications/compteur', [NotificationAdminController::class, 'compteur'])->name('notifications.compteur');
+        Route::get('/notifications', [NotificationAdminController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/{id}/marquer-lue', [NotificationAdminController::class, 'marquerLue'])->name('notifications.marquer-lue');
+        Route::post('/notifications/marquer-toutes-lues', [NotificationAdminController::class, 'marquerToutesLues'])->name('notifications.marquer-toutes-lues');
 
         // paiements
         Route::get('/paiements/liste', [PaiementController::class, 'liste'])->name('paiements.liste');
