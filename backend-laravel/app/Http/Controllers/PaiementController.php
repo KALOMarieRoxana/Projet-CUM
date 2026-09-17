@@ -40,6 +40,10 @@ class PaiementController extends Controller
                                 ->whereIn('statut', ['acceptée', 'acceptee'])
                                 ->count(),
         ];
+        
+        if ($request->routeIs('super-admin.*')) {
+            return view('super-admin.paiements.index', compact('demandes', 'stats', 'reference'));
+        }
 
         return view('admin.paiements.index', compact('demandes', 'stats', 'reference'));
     }

@@ -437,13 +437,13 @@
                 <i class="bi bi-people"></i> Gestion Administrateurs
             </a>
 
-             <a href="{{ route('super-admin.citoyens.index') }}"
-                class="nav-link {{ request()->routeIs('super-admin.citoyens*') ? 'active' : '' }}">
+            <a href="{{ route('super-admin.citoyens.index') }}"
+               class="nav-link {{ request()->routeIs('super-admin.citoyens*') ? 'active' : '' }}">
                 <i class="bi bi-people-fill"></i> Citoyens
             </a>
 
             <a href="{{ route('super-admin.types-actes.index') }}"
-                class="nav-link {{ request()->routeIs('super-admin.types-actes*') ? 'active' : '' }}">
+               class="nav-link {{ request()->routeIs('super-admin.types-actes*') ? 'active' : '' }}">
                 <i class="bi bi-file-earmark-text"></i> Types d'actes
             </a>
         @endif
