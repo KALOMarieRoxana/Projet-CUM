@@ -525,7 +525,7 @@ export default function NouvelleDemande() {
                 <input type="text" name="demandeur_adresse" value={form.demandeur_adresse} onChange={handleChange} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13 }} />
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 4 }}>Relation *</label>
+                <label style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 4 }}>Relation avec personne concernée *</label>
                 <select name="demandeur_relation" value={form.demandeur_relation} onChange={handleChange} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13 }}>
                   {OPTIONS_RELATION.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
@@ -540,7 +540,7 @@ export default function NouvelleDemande() {
           {/* Section : Personne concernée */}
           <div style={{ marginBottom: 24, paddingTop: 20, borderTop: '1px solid #E5E7EB' }}>
             <h3 style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Users size={18} color="#4F46E5" /> Informations sur la personne concernée
+              <Users size={18} color="#4F46E5" /> Informations sur la personne concernée de l'acte
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
@@ -553,7 +553,7 @@ export default function NouvelleDemande() {
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 4 }}>Lieu de naissance *</label>
-                <input type="text" name="personne_lieu_naissance" value={form.personne_lieu_naissance} onChange={handleChange} placeholder="Ex: Antananarivo" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13 }} />
+                <input type="text" name="personne_lieu_naissance" value={form.personne_lieu_naissance} onChange={handleChange} placeholder="Ex: Mahajanga" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13 }} />
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 4 }}>Date de naissance *</label>
@@ -578,7 +578,7 @@ export default function NouvelleDemande() {
               </label>
               <label style={{ padding: 16, borderRadius: 10, border: form.service === 'express' ? '2px solid #6366F1' : '1px solid #E5E7EB', background: form.service === 'express' ? '#EEF2FF' : '#FFF', cursor: 'pointer' }}>
                 <input type="radio" name="service" value="express" checked={form.service === 'express'} onChange={handleChange} style={{ accentColor: '#6366F1' }} />
-                <span style={{ marginLeft: 8, fontWeight: 600 }}>Service Express ⚡ (24h)</span>
+                <span style={{ marginLeft: 8, fontWeight: 600 }}>Service Express  (24h)</span>
               </label>
             </div>
           </div>
@@ -641,16 +641,16 @@ export default function NouvelleDemande() {
                 </div>
               </div>
 
-              {/* SECTION 2 : TYPE DE DOCUMENT */}
+              {/* SECTION 2 : COMMANDE COMPLEMENTAIRES */}
               {supplementsDisponibles.length > 0 && (
                 <div style={{ marginBottom: 20, paddingTop: 16, borderTop: '2px dashed #D1D5DB' }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#059669', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <FileText size={16} /> TYPE DE DOCUMENT
+                    <FileText size={16} /> Commandes Complementaires
                   </div>
 
                   <div style={{ marginBottom: 12 }}>
                     <label style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 4 }}>
-                      Document à demander *
+                      Commande à demander *
                     </label>
                     <select
                       name="supplement_id"
@@ -658,7 +658,7 @@ export default function NouvelleDemande() {
                       onChange={handleSelectionActeChange}
                       style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 13, background: '#FFF' }}
                     >
-                      <option value="">-- Sélectionnez un document --</option>
+                      <option value=""> Sélectionnez un Commande avec acte</option>
                       {supplementsDisponibles.map(supp => {
                         const prixSupp = parseFloat(supp[`prix_${form.service}_${selectionActe.langue}`]) || 0;
                         return (
@@ -717,7 +717,7 @@ export default function NouvelleDemande() {
                   border: '1px solid #4F46E5'
                 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#4F46E5' }}>
-                    💰 Prix total (Acte + Document)
+                    Prix total (Acte + Commandes)
                   </div>
                   <div style={{ fontSize: 20, fontWeight: 800, color: '#4F46E5' }}>
                     {new Intl.NumberFormat('fr-FR').format(prixTotalApercu)} Ar
@@ -728,7 +728,7 @@ export default function NouvelleDemande() {
               {/* Champs spécifiques */}
               {champsSpecifiques.length > 0 && (
                 <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed #D1D5DB' }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Renseignements spécifiques :</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Renseignements spécifiques de l'acte :</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     {champsSpecifiques.map(champ => (
                       <div key={champ.name}>

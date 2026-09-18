@@ -80,13 +80,13 @@ export default function Dashboard() {
 
     // ✅ Cas 4 : relation typeActeRelation
     if (acte.typeActeRelation) {
-        return acte.typeActeRelation.nom
-            || LABELS_TYPE[acte.typeActeRelation.type_acte]
-            || acte.typeActeRelation.type_acte
-            || 'Acte';
+      return acte.typeActeRelation.nom
+        || LABELS_TYPE[acte.typeActeRelation.type_acte]
+        || acte.typeActeRelation.type_acte
+        || 'Acte';
     }
 
-     // ✅ Cas 5 : correspondance par type_acte_id
+    // ✅ Cas 5 : correspondance par type_acte_id
     if (acte.type_acte_id) {
       const typeObj = typesActes.find(t => t.id === acte.type_acte_id);
       if (typeObj) {
@@ -140,7 +140,8 @@ export default function Dashboard() {
   const chargerDonnees = async () => {
     try {
       setChargement(true);
-      const [resProfil, resDemandes] = await Promise.all([
+      // ✅ CORRECTION : 3 appels API correctement destructurés
+      const [resProfil, resDemandes, resTypes] = await Promise.all([
         api.get('/auth/profil'),
         api.get('/demandes/mes-demandes'),
         api.get('/types-actes')
@@ -148,13 +149,14 @@ export default function Dashboard() {
       setProfilDetaille(resProfil.data.utilisateur);
       const demandes = resDemandes.data.demandes || [];
       setMesDemandes(demandes);
+      setTypesActes(resTypes.data.types_actes || resTypes.data || []);
 
       // 🔍 DEBUG
       if (demandes.length > 0) {
         const premierActe = demandes[0]?.demande_actes?.[0] || demandes[0]?.demandeActes?.[0];
-        console.log('🔍 Structure du premier acte :', premierActe);
-        console.log('🔍 supplement :', premierActe?.supplement);
-        console.log('🔍 typeActe :', premierActe?.typeActe);
+        console.log('Structure du premier acte :', premierActe);
+        console.log('supplement :', premierActe?.supplement);
+        console.log('typeActe :', premierActe?.typeActe);
       }
     } catch (err) {
       setErreur('Impossible de charger vos données.');
@@ -217,7 +219,7 @@ export default function Dashboard() {
 
     try {
       setChargementMdp(true);
-      await api.put('/auth/changer-mot-de-passe', { 
+      await api.put('/auth/changer-mot-de-passe', {
         ancienMotDePasse: ancienMotDePasse,
         nouveauMotDePasse: nouveauMotDePasse,
         nouveauMotDePasse_confirmation: confirmerMotDePasse,
@@ -228,15 +230,14 @@ export default function Dashboard() {
       setConfirmerMotDePasse('');
       setTimeout(() => fermerModalChangerMdp(), 2000);
     } catch (err) {
-
-         // ✅ Extraction sécurisée du message d'erreur
-        const message =
-          typeof err.response?.data?.message === 'string'
-            ? err.response.data.message
-            : err.response?.data?.message?.nouveauMotDePasse?.[0]
-            || err.response?.data?.message?.ancienMotDePasse?.[0]
-            || 'Erreur lors du changement de mot de passe.';
-        setErreurMdp(message);
+      // ✅ Extraction sécurisée du message d'erreur
+      const message =
+        typeof err.response?.data?.message === 'string'
+          ? err.response.data.message
+          : err.response?.data?.message?.nouveauMotDePasse?.[0]
+          || err.response?.data?.message?.ancienMotDePasse?.[0]
+          || 'Erreur lors du changement de mot de passe.';
+      setErreurMdp(message);
     } finally {
       setChargementMdp(false);
     }
@@ -446,11 +447,22 @@ export default function Dashboard() {
                 const totalPrix = actes.reduce((sum, a) => sum + (parseFloat(a.prix_unitaire || 0) * (a.quantite || 1)), 0);
 
                 return (
-                  <div key={d.id_demande} style={{ padding: '16px 24px', borderBottom: index < mesDemandes.length - 1 ? `1px solid ${colors.cardBorder}` : 'none', display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                  <div
+                    key={d.id_demande}
+                    style={{
+                      padding: '16px 24px',
+                      borderBottom: index < mesDemandes.length - 1 ? `1px solid ${colors.cardBorder}` : 'none',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 16
+                    }}
+                  >
+                    {/* ===== ICÔNE STATUT ===== */}
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: config.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 4 }}>
                       <IconStatut size={18} color={config.texte} />
                     </div>
 
+                    {/* ===== BLOC PRINCIPAL (détails + motif refus + PDF) ===== */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {/* Ligne 1 : Référence + Date */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
@@ -478,7 +490,6 @@ export default function Dashboard() {
                           <span style={{ fontWeight: 500 }}>Nombre d'actes :</span> {nbActes}
                         </div>
 
-                        {/* ✅ DÉTAIL PAR ACTE AVEC SOUS-TYPE (SUPPLÉMENT) */}
                         {actes.length > 0 && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <span style={{ fontWeight: 500 }}>Détail des actes :</span>
@@ -540,33 +551,59 @@ export default function Dashboard() {
                           </span>
                         )}
                       </div>
+
+                      {/* ✅ MOTIF DU REFUS — affiché UNIQUEMENT si la demande est refusée */}
+                      {d.statut === 'refusée' && d.commentaire_admin && (
+                        <div
+                          style={{
+                            marginTop: 12,
+                            padding: '10px 14px',
+                            background: '#FEE2E2',
+                            border: '1px solid #FCA5A5',
+                            borderRadius: 8,
+                            fontSize: 12,
+                            color: '#991B1B',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: 8,
+                          }}
+                        >
+                          <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+                          <div>
+                            <strong>Motif du refus :</strong>
+                            <div style={{ marginTop: 4, lineHeight: 1.5 }}>
+                              {d.commentaire_admin}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ✅ BOUTON PDF (uniquement si acceptée et PDF disponible) */}
+                      {d.statut === 'acceptée' && d.pdf_path && (
+                        <a
+                          href={`${API_URL}/demandes/${d.id_demande}/pdf`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            marginTop: 10,
+                            padding: '6px 12px',
+                            borderRadius: 6,
+                            background: '#10B981',
+                            color: '#fff',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          <Download size={14} /> Imprimer la Demande
+                        </a>
+                      )}
                     </div>
 
-                    {/* ✅ BOUTON PDF */}
-                    {d.statut === 'acceptée' && d.pdf_path && (
-                      <a
-                        href={`${API_URL}/demandes/${d.id_demande}/pdf`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: 6,
-                          background: '#10B981',
-                          color: '#fff',
-                          fontSize: 12,
-                          fontWeight: 600,
-                          textDecoration: 'none',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          marginLeft: 8
-                        }}
-                      >
-                        <Download size={14} /> Télécharger PDF
-                      </a>
-                    )}
-
-                    {/* Statut à droite */}
+                    {/* ===== BADGE STATUT (à droite) ===== */}
                     <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, background: config.bg, color: config.texte, fontWeight: 600, border: `1px solid ${config.border}33`, flexShrink: 0 }}>
                       {d.statut}
                     </span>

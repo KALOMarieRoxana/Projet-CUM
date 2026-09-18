@@ -28,7 +28,9 @@ class DemandeRefuseeNotification extends Notification
             'type'         => 'demande_refusee',
             'demande_id'   => $this->demande->id_demande,
             'reference'    => $this->demande->reference,
-            'message'      => "❌ Votre demande #{$this->demande->reference} a été refusée.",
+            'message'      => " Votre demande #{$this->demande->reference} a été refusée.",
+            'motif'        => $motif,
+            'raison'       => $motif,
             'commentaire'  => $this->demande->commentaire_admin,
             'date'         => now()->toIso8601String(),
         ];

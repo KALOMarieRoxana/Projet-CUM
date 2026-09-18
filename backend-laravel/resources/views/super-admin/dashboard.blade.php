@@ -4,9 +4,7 @@
 
 @push('styles')
 <style>
-    /* ═══════════════════════════════════════════════════════════ */
-    /* HERO BANNER — Style Able Pro                                */
-    /* ═══════════════════════════════════════════════════════════ */
+    /* HERO BANNER */
     .hero-banner {
         position: relative;
         overflow: hidden;
@@ -19,14 +17,11 @@
         display: flex;
         align-items: center;
     }
-
     .hero-banner::before {
         content: '';
         position: absolute;
-        top: -60px;
-        right: 15%;
-        width: 220px;
-        height: 220px;
+        top: -60px; right: 15%;
+        width: 220px; height: 220px;
         background: rgba(255, 255, 255, 0.08);
         border-radius: 50%;
         pointer-events: none;
@@ -34,70 +29,44 @@
     .hero-banner::after {
         content: '';
         position: absolute;
-        bottom: -80px;
-        right: -40px;
-        width: 280px;
-        height: 280px;
+        bottom: -80px; right: -40px;
+        width: 280px; height: 280px;
         background: rgba(255, 255, 255, 0.06);
         border-radius: 50%;
         pointer-events: none;
     }
-
-    .hero-content {
-        position: relative;
-        z-index: 2;
-        max-width: 60%;
-    }
-
+    .hero-content { position: relative; z-index: 2; max-width: 60%; }
     .hero-title {
-        font-size: 26px;
-        font-weight: 800;
-        color: #FFFFFF;
-        margin: 0 0 8px 0;
+        font-size: 26px; font-weight: 800;
+        color: #FFFFFF; margin: 0 0 8px 0;
         letter-spacing: -0.3px;
     }
-
     .hero-subtitle {
         font-size: 13.5px;
         color: rgba(255, 255, 255, 0.85);
-        margin: 0 0 18px 0;
-        line-height: 1.5;
+        margin: 0 0 18px 0; line-height: 1.5;
         max-width: 480px;
     }
-
     .hero-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 9px 20px;
-        border-radius: 8px;
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 9px 20px; border-radius: 8px;
         background: rgba(255, 255, 255, 0.15);
         border: 1px solid rgba(255, 255, 255, 0.3);
-        color: #FFFFFF;
-        font-size: 13px;
-        font-weight: 600;
-        text-decoration: none;
-        backdrop-filter: blur(10px);
+        color: #FFFFFF; font-size: 13px; font-weight: 600;
+        text-decoration: none; backdrop-filter: blur(10px);
         transition: all 0.2s;
     }
     .hero-btn:hover {
         background: rgba(255, 255, 255, 0.25);
-        transform: translateY(-1px);
-        color: #FFFFFF;
+        transform: translateY(-1px); color: #FFFFFF;
     }
-
     .hero-decoration {
-        position: absolute;
-        right: 40px;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 1;
+        position: absolute; right: 40px; top: 50%;
+        transform: translateY(-50%); z-index: 1;
         color: rgba(255, 255, 255, 0.15);
-        font-size: 140px;
-        line-height: 1;
+        font-size: 140px; line-height: 1;
         pointer-events: none;
     }
-
     @media (max-width: 768px) {
         .hero-content { max-width: 100%; }
         .hero-decoration { display: none; }
@@ -108,9 +77,7 @@
 
 @section('content')
 
-{{-- ═══════════════════════════════════════════════════════════ --}}
-{{-- BANNIÈRE HERO — Style Able Pro                              --}}
-{{-- ═══════════════════════════════════════════════════════════ --}}
+{{-- BANNIÈRE HERO --}}
 <div class="hero-banner">
     <div class="hero-content">
         <h2 class="hero-title">Tableau de bord Super Admin</h2>
@@ -121,20 +88,18 @@
             <i class="bi bi-people-fill"></i> Gérer tous les administrateurs
         </a>
     </div>
-
     <div class="hero-decoration">
         <i class="bi bi-speedometer2"></i>
     </div>
 </div>
 
-{{-- ═══════════ ALERTES ═══════════ --}}
+{{-- ALERTES --}}
 @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
         {{ session('success') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 @endif
-
 @if(session('error'))
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
         {{ session('error') }}
@@ -142,10 +107,8 @@
     </div>
 @endif
 
-{{-- ═══════════ 4 CARTES STATS ═══════════ --}}
+{{-- 4 CARTES STATS --}}
 <div class="row g-3 mb-4">
-
-    {{-- Administrateurs --}}
     <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-icon" style="background-color: #e0e7ff; color: #4f46e5;">
@@ -157,8 +120,6 @@
             </div>
         </div>
     </div>
-
-    {{-- Total --}}
     <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-icon" style="background-color: #dbeafe; color: #2563eb;">
@@ -170,8 +131,6 @@
             </div>
         </div>
     </div>
-
-    {{-- En attente --}}
     <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-icon" style="background-color: #fef3c7; color: #d97706;">
@@ -183,8 +142,6 @@
             </div>
         </div>
     </div>
-
-    {{-- Acceptées --}}
     <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-icon" style="background-color: #d1fae5; color: #059669;">
@@ -198,7 +155,7 @@
     </div>
 </div>
 
-{{-- ═══════════ TABLEAU DES DEMANDES ═══════════ --}}
+{{-- TABLEAU DES DEMANDES --}}
 <div class="content-card">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
@@ -229,13 +186,10 @@
             <tbody>
                 @forelse($demandes as $demande)
                     <tr>
-                        {{-- Référence --}}
                         <td class="ps-3">
                             <div class="fw-semibold">{{ $demande->reference }}</div>
                             <small class="text-muted">#{{ $demande->id_demande ?? $demande->id }}</small>
                         </td>
-
-                        {{-- Demandeur --}}
                         <td>
                             <div class="fw-semibold">
                                 {{ $demande->demandeur_prenom ?? '' }}
@@ -245,34 +199,18 @@
                                 {{ $demande->personne_prenom ?? '' }} {{ $demande->personne_nom ?? '' }}
                             </small>
                         </td>
-
-                        {{-- Contact --}}
-                        <td>
-                            <div>{{ $demande->demandeur_contact ?? '—' }}</div>
-                        </td>
-
-                        {{-- Service --}}
+                        <td>{{ $demande->demandeur_contact ?? '—' }}</td>
                         <td>
                             @if(($demande->service ?? 'standard') === 'express')
-                                <span class="badge bg-warning bg-opacity-10 text-warning px-2 py-1 rounded-pill">
-                                    ⚡ Express
-                                </span>
+                                <span class="badge bg-warning bg-opacity-10 text-warning px-2 py-1 rounded-pill">⚡ Express</span>
                             @else
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1 rounded-pill">
-                                    🛡 Standard
-                                </span>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1 rounded-pill">🛡 Standard</span>
                             @endif
                         </td>
-
-                        {{-- Prix --}}
                         <td>
-                            <div class="fw-semibold">
-                                {{ number_format($demande->prix_total ?? 0, 0, ',', ' ') }}
-                            </div>
+                            <div class="fw-semibold">{{ number_format($demande->prix_total ?? 0, 0, ',', ' ') }}</div>
                             <small class="text-muted">Ar</small>
                         </td>
-
-                        {{-- Statut --}}
                         <td>
                             @if($demande->statut === 'acceptée' || $demande->statut === 'acceptee')
                                 <span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill">
@@ -288,14 +226,10 @@
                                 </span>
                             @endif
                         </td>
-
-                        {{-- Date --}}
                         <td>
                             <div>{{ $demande->created_at->format('d/m/Y') }}</div>
                             <small class="text-muted">{{ $demande->created_at->format('H:i') }}</small>
                         </td>
-
-                        {{-- Actions --}}
                         <td class="text-end pe-3" style="min-width: 100px;">
                             <div class="d-flex flex-column gap-1 align-items-end">
 
@@ -305,7 +239,7 @@
                                     Voir
                                 </a>
 
-                                @if($demande->statut === 'en_attente')
+                                @if(in_array($demande->statut, ['en_attente', 'en attente']))
                                     <button type="button"
                                             class="btn btn-sm btn-link text-decoration-none p-0"
                                             style="font-size: 12px; color: #374151;"
@@ -344,7 +278,6 @@
         </table>
     </div>
 
-    {{-- Pagination --}}
     @if(method_exists($demandes, 'hasPages') && $demandes->hasPages())
         <div class="mt-3 d-flex justify-content-center">
             {{ $demandes->links('pagination::bootstrap-5') }}
@@ -352,7 +285,9 @@
     @endif
 </div>
 
-{{-- ═══════════ MODAL ACTION ═══════════ --}}
+{{-- ═══════════════════════════════════════════════════════════ --}}
+{{-- MODAL ACTION — Accepter / Refuser avec motif libre          --}}
+{{-- ═══════════════════════════════════════════════════════════ --}}
 <div class="modal fade" id="modalAction" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -369,14 +304,14 @@
                 <div class="modal-body">
                     <p id="modalMessage" class="mb-3"></p>
 
-                    <label for="commentaire_admin" class="form-label small fw-bold">
+                    <label for="commentaire_admin" class="form-label small fw-bold" id="labelCommentaire">
                         Commentaire (optionnel)
                     </label>
                     <textarea name="commentaire_admin"
                               id="commentaire_admin"
                               class="form-control"
                               rows="4"
-                              placeholder="Ex: Documents manquants / Demande validée."></textarea>
+                              placeholder="Ex : Documents manquants / Demande validée."></textarea>
                 </div>
 
                 <div class="modal-footer">
@@ -388,20 +323,29 @@
     </div>
 </div>
 
-{{-- ═══════════ SCRIPT ═══════════ --}}
+{{-- SCRIPT --}}
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const modalAction = document.getElementById('modalAction');
+    const formAction = document.getElementById('formAction');
+    const commentaire = document.getElementById('commentaire_admin');
+    const label = document.getElementById('labelCommentaire');
 
+    if (!modalAction) return;
+
+    // ═══════════════════════════════════════════════════════
+    // 1. À L'OUVERTURE DE LA MODALE
+    // ═══════════════════════════════════════════════════════
     modalAction.addEventListener('show.bs.modal', function (event) {
         const button = event.relatedTarget;
         const id = button.getAttribute('data-id');
         const reference = button.getAttribute('data-reference');
         const action = button.getAttribute('data-action');
 
-        document.getElementById('formAction').action = `/super-admin/demandes/${id}`;
-        document.getElementById('commentaire_admin').value = '';
+        formAction.action = `/super-admin/demandes/${id}`;
+        commentaire.value = '';
+        commentaire.placeholder = '';
 
         const titre = document.getElementById('modalTitre');
         const message = document.getElementById('modalMessage');
@@ -409,17 +353,45 @@ document.addEventListener('DOMContentLoaded', function () {
         const btnConfirmer = document.getElementById('btnConfirmer');
 
         if (action === 'accepter') {
+            // ✅ ACCEPTATION
             titre.innerHTML = '<i class="bi bi-check-circle text-success"></i> Accepter la demande';
             message.innerHTML = `Voulez-vous <strong class="text-success">accepter</strong> la demande <strong>${reference}</strong> ?<br><small class="text-muted">Un PDF sera généré et le citoyen sera notifié.</small>`;
             inputStatut.value = 'acceptée';
             btnConfirmer.className = 'btn btn-success';
             btnConfirmer.innerHTML = '<i class="bi bi-check-circle"></i> Confirmer l\'acceptation';
+
+            label.className = 'form-label small fw-bold';
+            label.textContent = 'Commentaire (optionnel)';
+            commentaire.placeholder = 'Ex : Demande validée.';
+
         } else {
+            // ✅ REFUS
             titre.innerHTML = '<i class="bi bi-x-circle text-danger"></i> Refuser la demande';
-            message.innerHTML = `Voulez-vous <strong class="text-danger">refuser</strong> la demande <strong>${reference}</strong> ?<br><small class="text-muted">Le citoyen sera notifié du refus.</small>`;
+            message.innerHTML = `Voulez-vous <strong class="text-danger">refuser</strong> la demande <strong>${reference}</strong> ?<br><small class="text-muted">Vous devez écrire un motif. Le citoyen sera notifié.</small>`;
             inputStatut.value = 'refusée';
             btnConfirmer.className = 'btn btn-danger';
             btnConfirmer.innerHTML = '<i class="bi bi-x-circle"></i> Confirmer le refus';
+
+            label.className = 'form-label small fw-bold text-danger';
+            label.innerHTML = 'Motif du refus <span class="text-danger">*</span>';
+            commentaire.placeholder = "Ex : Le numéro d'acte est introuvable dans nos registres.\nEx : La relation déclarée n'est pas compatible.\nEx : La personne concernée n'est pas née à Mahajanga.";
+        }
+    });
+
+    // ═══════════════════════════════════════════════════════
+    // 2. VALIDATION : motif obligatoire pour un refus
+    // ═══════════════════════════════════════════════════════
+    formAction.addEventListener('submit', function (e) {
+        const statut = document.getElementById('inputStatut').value;
+
+        if (statut === 'refusée') {
+            const motif = commentaire.value.trim();
+            if (!motif) {
+                e.preventDefault();
+                alert('⚠️ Veuillez écrire le motif du refus.');
+                commentaire.focus();
+                return false;
+            }
         }
     });
 });

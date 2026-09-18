@@ -82,7 +82,7 @@ export default function MesDemandes() {
 
   useEffect(() => {
     if (!utilisateur) {
-      dejaCharge.current = false; 
+      dejaCharge.current = false;
       navigate('/connexion');
       return;
     }
@@ -236,7 +236,6 @@ export default function MesDemandes() {
       {/* CONTENU PRINCIPAL */}
       <div style={{ marginLeft: 240, flex: 1, padding: '32px 32px' }}>
 
-        {/* ✅ HEADER — Les boutons "Mes demandes" et "Statistiques" sont SUPPRIMÉS */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Link to="/tableau-de-bord" style={{ color: colors.primary, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -419,6 +418,30 @@ export default function MesDemandes() {
                           })}
                         </div>
                       )}
+
+                      {/* ✅ MOTIF DE REFUS (si refusée) — placé dans la boucle */}
+                      {demande.statut === 'refusée' && demande.commentaire_admin && (
+                        <div style={{
+                          marginTop: 10,
+                          padding: '10px 14px',
+                          background: '#FEE2E2',
+                          border: '1px solid #FCA5A5',
+                          borderRadius: 8,
+                          fontSize: 12,
+                          color: '#991B1B',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: 8,
+                        }}>
+                          <span style={{ fontSize: 16 }}>❌</span>
+                          <div>
+                            <strong>Motif du refus :</strong>
+                            <div style={{ marginTop: 4, lineHeight: 1.5 }}>
+                              {demande.commentaire_admin}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <button
@@ -483,6 +506,16 @@ export default function MesDemandes() {
                 )}
               </div>
             </div>
+
+            {/* ✅ Motif de refus dans le modal */}
+            {demandeSelectionnee.statut === 'refusée' && demandeSelectionnee.commentaire_admin && (
+              <div style={{ marginBottom: 20, padding: '12px 16px', background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: 8, fontSize: 13, color: '#991B1B' }}>
+                <strong>❌ Motif du refus :</strong>
+                <div style={{ marginTop: 6, lineHeight: 1.6 }}>
+                  {demandeSelectionnee.commentaire_admin}
+                </div>
+              </div>
+            )}
 
             <div>
               <h3 style={{ fontSize: 15, fontWeight: 600, margin: '0 0 12px 0', color: colors.text }}>📄 Liste des actes demandés</h3>
