@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifierEmail from './pages/VerifierEmail';
 import Dashboard from './pages/Dashboard';
 import MesDemandes from './pages/MesDemandes'; 
 import NouvelleDemande from './pages/NouvelleDemande';
@@ -23,6 +24,7 @@ function AppRoutes() {
       <Route path="/information" element={<Information />} />
       <Route path="/connexion" element={<Login />} />
       <Route path="/inscription" element={<Register />} />
+      <Route path="/verifier-email" element={<VerifierEmail />} />
       <Route path="/tableau-de-bord" element={<RouteProtegee><Dashboard /></RouteProtegee>} />
       <Route path="/mes-demandes" element={<RouteProtegee><MesDemandes /></RouteProtegee>} />
       <Route path="/nouvelle-demande" element={<RouteProtegee><NouvelleDemande /></RouteProtegee>} />

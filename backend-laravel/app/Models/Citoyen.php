@@ -27,16 +27,20 @@ class Citoyen extends Authenticatable
         'actif',
         'desactive_le',
         'raison_desactivation',
+        'email_verified_at',
+        'email_verification_token',
     ];
 
     protected $casts = [
         'actif'        => 'boolean',
         'desactive_le' => 'datetime',
+        'email_verified_at' => 'datetime',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'email_verification_token'
     ];
 
     // ✅ Accessor : statut lisible

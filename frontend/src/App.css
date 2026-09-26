@@ -145,6 +145,17 @@
       flex: 1 1 calc(50% - 8px);
     }
 
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
     a {
       width: 100%;
       justify-content: center;

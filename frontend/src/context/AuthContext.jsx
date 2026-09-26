@@ -51,16 +51,28 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // ===== INSCRIPTION CORRIGÉE =====
   const inscrire = async (formulaire) => {
     setChargement(true);
     setErreur('');
 
     try {
-      const { data } = await api.post('/auth/inscription', formulaire);
-      enregistrerSession(data);
+      // 1. Envoi des données au backend
+      await api.post('/auth/inscription', formulaire);
+
+      // 2. NE PAS appeler enregistrerSession(data) ici ! 
+      // L'utilisateur doit vérifier son email avant de pouvoir se connecter.
+      
       return true;
     } catch (err) {
-      setErreur(err.response?.data?.message || err.response?.data?.errors?.email?.[0] || err.message || 'Erreur lors de l\'inscription.');
+      // 3. Extraction précise du premier message d'erreur de validation Laravel (Erreur 422)
+      if (err.response?.data?.errors) {
+        const champErreur = Object.keys(err.response.data.errors)[0];
+        const messageErreur = err.response.data.errors[champErreur][0];
+        setErreur(`[${champErreur}] : ${messageErreur}`);
+      } else {
+        setErreur(err.response?.data?.message || err.message || 'Erreur lors de l\'inscription.');
+      }
       return false;
     } finally {
       setChargement(false);

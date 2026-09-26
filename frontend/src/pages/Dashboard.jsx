@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useRef } from 'react';
+﻿import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
@@ -14,6 +14,7 @@ import {
 import logo from '../assets/image/logo.png';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
+const POLLING_INTERVAL = 30000; // 30 secondes
 
 export default function Dashboard() {
   const { utilisateur, deconnecter } = useAuth();
@@ -36,8 +37,16 @@ export default function Dashboard() {
   const [erreurMdp, setErreurMdp] = useState('');
   const [succesMdp, setSuccesMdp] = useState('');
   const [chargementMdp, setChargementMdp] = useState(false);
+
+  // ✅ NOUVEAU : notification temps réel
+  const [notificationRecente, setNotificationRecente] = useState(null);
+  // ✅ NOUVEAU : compteur de rafraîchissement pour forcer le NotificationBell
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const menuRef = useRef(null);
   const modalRef = useRef(null);
+  const pollingRef = useRef(null);
+  const demandesRef = useRef([]); // ✅ Référence pour comparer sans stale closure
 
   const COULEURS_STATUT = {
     'en_attente': { bg: '#FEF3C7', texte: '#92400E', border: '#F59E0B', icon: Clock },
@@ -53,11 +62,15 @@ export default function Dashboard() {
     divorces: 'Acte de divorce',
   };
 
+  // ✅ Synchroniser demandesRef avec mesDemandes
+  useEffect(() => {
+    demandesRef.current = mesDemandes;
+  }, [mesDemandes]);
+
   // ✅ Fonction robuste pour extraire le nom du type d'acte
   const getNomTypeActe = (acte) => {
     if (!acte) return 'Acte';
 
-    // Cas 1 : relation typeActe
     if (acte.typeActe) {
       return acte.typeActe.nom
         || LABELS_TYPE[acte.typeActe.type_acte]
@@ -65,7 +78,6 @@ export default function Dashboard() {
         || 'Acte';
     }
 
-    // Cas 2 : type_acte est un objet
     if (acte.type_acte && typeof acte.type_acte === 'object') {
       return acte.type_acte.nom
         || LABELS_TYPE[acte.type_acte.type_acte]
@@ -73,12 +85,10 @@ export default function Dashboard() {
         || 'Acte';
     }
 
-    // Cas 3 : type_acte est une string
     if (typeof acte.type_acte === 'string' && acte.type_acte) {
       return LABELS_TYPE[acte.type_acte] || acte.type_acte;
     }
 
-    // ✅ Cas 4 : relation typeActeRelation
     if (acte.typeActeRelation) {
       return acte.typeActeRelation.nom
         || LABELS_TYPE[acte.typeActeRelation.type_acte]
@@ -86,7 +96,6 @@ export default function Dashboard() {
         || 'Acte';
     }
 
-    // ✅ Cas 5 : correspondance par type_acte_id
     if (acte.type_acte_id) {
       const typeObj = typesActes.find(t => t.id === acte.type_acte_id);
       if (typeObj) {
@@ -101,7 +110,6 @@ export default function Dashboard() {
   const getNomSupplement = (acte) => {
     if (!acte) return null;
 
-    // Cas 1 : relation supplement (chargée par Laravel)
     if (acte.supplement) {
       return acte.supplement.nom
         || acte.supplement.libelle
@@ -109,38 +117,16 @@ export default function Dashboard() {
         || null;
     }
 
-    // Cas 2 : champ direct supplement_nom
-    if (acte.supplement_nom) {
-      return acte.supplement_nom;
-    }
-
-    // Cas 3 : supplement_libelle
-    if (acte.supplement_libelle) {
-      return acte.supplement_libelle;
-    }
+    if (acte.supplement_nom) return acte.supplement_nom;
+    if (acte.supplement_libelle) return acte.supplement_libelle;
 
     return null;
   };
 
-  useEffect(() => {
-    if (!utilisateur) { navigate('/connexion'); return; }
-    chargerDonnees();
-  }, [utilisateur, navigate]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setMenuProfilOuvert(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
+  // ✅ Chargement initial complet (avec loader)
   const chargerDonnees = async () => {
     try {
       setChargement(true);
-      // ✅ CORRECTION : 3 appels API correctement destructurés
       const [resProfil, resDemandes, resTypes] = await Promise.all([
         api.get('/auth/profil'),
         api.get('/demandes/mes-demandes'),
@@ -150,20 +136,109 @@ export default function Dashboard() {
       const demandes = resDemandes.data.demandes || [];
       setMesDemandes(demandes);
       setTypesActes(resTypes.data.types_actes || resTypes.data || []);
-
-      // 🔍 DEBUG
-      if (demandes.length > 0) {
-        const premierActe = demandes[0]?.demande_actes?.[0] || demandes[0]?.demandeActes?.[0];
-        console.log('Structure du premier acte :', premierActe);
-        console.log('supplement :', premierActe?.supplement);
-        console.log('typeActe :', premierActe?.typeActe);
-      }
     } catch (err) {
       setErreur('Impossible de charger vos données.');
     } finally {
       setChargement(false);
     }
   };
+
+  // ✅ NOUVEAU : Rechargement silencieux (sans loader) + détection changements
+  const chargerDemandesSilencieusement = useCallback(async () => {
+    try {
+      const res = await api.get('/demandes/mes-demandes');
+      const nouvellesDemandes = res.data.demandes || [];
+      const anciennesDemandes = demandesRef.current;
+
+      // 🔔 Détecter les changements de statut
+      let changementDetecte = false;
+      nouvellesDemandes.forEach(nouvelle => {
+        const ancienne = anciennesDemandes.find(d => d.id_demande === nouvelle.id_demande);
+
+        // Cas 1 : Demande déjà connue → changement de statut
+        if (ancienne && ancienne.statut !== nouvelle.statut) {
+          changementDetecte = true;
+          if (nouvelle.statut === 'acceptée') {
+            setNotificationRecente({
+              type: 'success',
+              message: `🎉 Votre demande ${nouvelle.reference || `DEM-${nouvelle.id_demande}`} a été ACCEPTÉE !`,
+            });
+          } else if (nouvelle.statut === 'refusée') {
+            setNotificationRecente({
+              type: 'error',
+              message: `❌ Votre demande ${nouvelle.reference || `DEM-${nouvelle.id_demande}`} a été REFUSÉE.`,
+            });
+          }
+        }
+
+        // Cas 2 : Nouvelle demande jamais vue → notification
+        if (!ancienne) {
+          changementDetecte = true;
+          setNotificationRecente({
+            type: 'success',
+            message: `📄 Nouvelle demande ${nouvelle.reference || `DEM-${nouvelle.id_demande}`} enregistrée.`,
+          });
+        }
+      });
+
+      // ✅ Mettre à jour les demandes si changement
+      if (changementDetecte) {
+        setMesDemandes(nouvellesDemandes);
+        // ✅ Forcer le rafraîchissement du NotificationBell
+        setRefreshKey(prev => prev + 1);
+
+        // ✅ Auto-fermer la notification après 6s
+        setTimeout(() => setNotificationRecente(null), 6000);
+      } else {
+        // Pas de changement → mise à jour discrète quand même (pour PDF, etc.)
+        setMesDemandes(nouvellesDemandes);
+      }
+    } catch (err) {
+      console.error('Erreur rechargement silencieux:', err);
+    }
+  }, []);
+
+  // ✅ Chargement initial
+  useEffect(() => {
+    if (!utilisateur) { navigate('/connexion'); return; }
+    chargerDonnees();
+  }, [utilisateur, navigate]);
+
+  // ✅ POLLING AUTOMATIQUE : toutes les 30 secondes
+  useEffect(() => {
+    if (!utilisateur) return;
+
+    pollingRef.current = setInterval(() => {
+      chargerDemandesSilencieusement();
+    }, POLLING_INTERVAL);
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [utilisateur, chargerDemandesSilencieusement]);
+
+  // ✅ RAFRAÎCHIR quand l'utilisateur revient sur l'onglet
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && utilisateur) {
+        chargerDemandesSilencieusement();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [utilisateur, chargerDemandesSilencieusement]);
+
+  // ✅ Fermer le menu si clic extérieur
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuProfilOuvert(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const gererDeconnexion = () => {
     deconnecter();
@@ -230,7 +305,6 @@ export default function Dashboard() {
       setConfirmerMotDePasse('');
       setTimeout(() => fermerModalChangerMdp(), 2000);
     } catch (err) {
-      // ✅ Extraction sécurisée du message d'erreur
       const message =
         typeof err.response?.data?.message === 'string'
           ? err.response.data.message
@@ -312,7 +386,8 @@ export default function Dashboard() {
             </h1>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <NotificationBell />
+            {/* ✅ refreshKey force le NotificationBell à se recharger */}
+            <NotificationBell key={refreshKey} />
             <ThemeSwitcher />
 
             <Link to="/nouvelle-demande" style={{ textDecoration: 'none' }}>
@@ -375,6 +450,40 @@ export default function Dashboard() {
         {erreur && (
           <div style={{ padding: '12px 16px', borderRadius: 10, background: '#FEE2E2', border: '1px solid #DC2626', color: '#991B1B', fontSize: 13, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
             <AlertCircle size={15} /> {erreur}
+          </div>
+        )}
+
+        {/* ✅ NOTIFICATION TEMPS RÉEL (changement de statut) */}
+        {notificationRecente && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 24,
+              right: 24,
+              zIndex: 3000,
+              padding: '14px 20px',
+              borderRadius: 12,
+              background: notificationRecente.type === 'success' ? '#D1FAE5' : '#FEE2E2',
+              border: `1px solid ${notificationRecente.type === 'success' ? '#10B981' : '#EF4444'}`,
+              color: notificationRecente.type === 'success' ? '#065F46' : '#991B1B',
+              fontSize: 13,
+              fontWeight: 600,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              animation: 'slideIn 0.3s ease-out',
+              maxWidth: 400,
+            }}
+          >
+            <Bell size={18} />
+            <span style={{ flex: 1 }}>{notificationRecente.message}</span>
+            <button
+              onClick={() => setNotificationRecente(null)}
+              style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: 2 }}
+            >
+              <X size={16} />
+            </button>
           </div>
         )}
 
@@ -457,12 +566,12 @@ export default function Dashboard() {
                       gap: 16
                     }}
                   >
-                    {/* ===== ICÔNE STATUT ===== */}
+                    {/* ICÔNE STATUT */}
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: config.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 4 }}>
                       <IconStatut size={18} color={config.texte} />
                     </div>
 
-                    {/* ===== BLOC PRINCIPAL (détails + motif refus + PDF) ===== */}
+                    {/* BLOC PRINCIPAL */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {/* Ligne 1 : Référence + Date */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
@@ -484,7 +593,7 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      {/* Ligne 3 : Nombre d'actes + Détail avec suppléments */}
+                      {/* Ligne 3 : Nombre d'actes + Détail */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, color: colors.textSecondary, marginBottom: 6 }}>
                         <div>
                           <span style={{ fontWeight: 500 }}>Nombre d'actes :</span> {nbActes}
@@ -552,7 +661,7 @@ export default function Dashboard() {
                         )}
                       </div>
 
-                      {/* ✅ MOTIF DU REFUS — affiché UNIQUEMENT si la demande est refusée */}
+                      {/* MOTIF DU REFUS */}
                       {d.statut === 'refusée' && d.commentaire_admin && (
                         <div
                           style={{
@@ -578,32 +687,37 @@ export default function Dashboard() {
                         </div>
                       )}
 
-                      {/* ✅ BOUTON PDF (uniquement si acceptée et PDF disponible) */}
+                      {/* ✅ BOUTON PDF — EN BAS */}
                       {d.statut === 'acceptée' && d.pdf_path && (
-                        <a
-                          href={`${API_URL}/demandes/${d.id_demande}/pdf`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            marginTop: 10,
-                            padding: '6px 12px',
-                            borderRadius: 6,
-                            background: '#10B981',
-                            color: '#fff',
-                            fontSize: 12,
-                            fontWeight: 600,
-                            textDecoration: 'none',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 4,
-                          }}
-                        >
-                          <Download size={14} /> Imprimer la Demande
-                        </a>
+                        <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px dashed ${colors.cardBorder}` }}>
+                          <a
+                            href={`${API_URL}/demandes/${d.id_demande}/pdf`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              padding: '8px 16px',
+                              borderRadius: 8,
+                              background: '#10B981',
+                              color: '#fff',
+                              fontSize: 12,
+                              fontWeight: 600,
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              boxShadow: '0 2px 6px rgba(16,185,129,0.25)',
+                              transition: 'transform 0.15s',
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                          >
+                            <Download size={14} /> Imprimer Demande
+                          </a>
+                        </div>
                       )}
                     </div>
 
-                    {/* ===== BADGE STATUT (à droite) ===== */}
+                    {/* BADGE STATUT */}
                     <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, background: config.bg, color: config.texte, fontWeight: 600, border: `1px solid ${config.border}33`, flexShrink: 0 }}>
                       {d.statut}
                     </span>

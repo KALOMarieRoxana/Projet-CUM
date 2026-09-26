@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Onglets } from './Login';
 import { verifierImageCin } from '../utils/verifierCin';
+import { Mail, CheckCircle, X } from 'lucide-react'; // ✅ NOUVEAU
 import '../styles/animations.css';
 
 export default function Register() {
@@ -12,6 +13,11 @@ export default function Register() {
   });
   const { inscrire, chargement, erreur } = useAuth();
   const navigate = useNavigate();
+
+  // ✅ NOUVEAU : Modale de succès
+  const [modalSuccesOuverte, setModalSuccesOuverte] = useState(false);
+  const [emailInscrit, setEmailInscrit] = useState('');
+  const [compteARebours, setCompteARebours] = useState(4);
 
   // ===== Photo CIN recto =====
   const [photoRecto, setPhotoRecto] = useState(null);
@@ -28,6 +34,25 @@ export default function Register() {
   const [progressionVerso, setProgressionVerso] = useState(0);
   const [versoValide, setVersoValide] = useState(false);
   const [erreurVerso, setErreurVerso] = useState('');
+
+  // ✅ NOUVEAU : Compte à rebours automatique
+  useEffect(() => {
+    if (!modalSuccesOuverte) return;
+
+    setCompteARebours(4);
+    const intervalle = setInterval(() => {
+      setCompteARebours((prev) => {
+        if (prev <= 1) {
+          clearInterval(intervalle);
+          navigate('/connexion');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(intervalle);
+  }, [modalSuccesOuverte, navigate]);
 
   const majChamp = (champ) => (e) =>
     setFormulaire({ ...formulaire, [champ]: e.target.value });
@@ -107,6 +132,7 @@ export default function Register() {
       lecteur.readAsDataURL(fichier);
     });
 
+  // ===== FONCTION MODIFIÉE : ouvre la modale au lieu d'afficher un texte =====
   const gererSoumission = async (e) => {
     e.preventDefault();
 
@@ -122,12 +148,28 @@ export default function Register() {
     const cinRectoBase64 = await compresserImageVersBase64(photoRecto);
     const cinVersoBase64 = await compresserImageVersBase64(photoVerso);
 
-    const succes = await inscrire({
+    // ✅ Sauvegarder l'email avant de vider le formulaire
+    const emailUtilise = formulaire.email;
+
+    const estInscrit = await inscrire({
       ...formulaire,
       cin_recto_base64: cinRectoBase64,
       cin_verso_base64: cinVersoBase64
     });
-    if (succes) navigate('/tableau-de-bord');
+
+    if (estInscrit) {
+      // ✅ Sauvegarder l'email et ouvrir la modale
+      setEmailInscrit(emailUtilise);
+      setModalSuccesOuverte(true);
+
+      // Réinitialiser le formulaire
+      setFormulaire({
+        nom: '', prenom: '', adresse: '',
+        contact: '', relation: '', email: '', mot_de_passe: '', mot_de_passe_confirmation: ''
+      });
+      setPhotoRecto(null); setApercuRecto(null); setRectoValide(false);
+      setPhotoVerso(null); setApercuVerso(null); setVersoValide(false);
+    }
   };
 
   const boutonDesactive =
@@ -156,6 +198,7 @@ export default function Register() {
         <div className="dossier-formulaire">
           <Onglets actif="inscription" />
 
+          {/* Affichage de l'erreur uniquement (le succès passe par la modale) */}
           {erreur && <div className="message-erreur">{erreur}</div>}
 
           <form onSubmit={gererSoumission}>
@@ -237,7 +280,6 @@ export default function Register() {
                 )}
               </div>
             </div>
-            {/* ===== Fin photos CIN ===== */}
 
             <div className="ligne-double">
               <div className="champ" style={{ animationDelay: '0.14s' }}>
@@ -248,13 +290,10 @@ export default function Register() {
                 <label>Relation</label>
                 <select value={formulaire.relation} onChange={majChamp('relation')} required>
                   <option value="">Sélectionner…</option>
-                  <option value="chef_menage">Chef de ménage</option>
                   <option value="epoux">Époux</option>
                   <option value="epouse">Épouse</option>
                   <option value="pere">Père</option>
                   <option value="mere">Mère</option>
-                  <option value="enfant">Enfant</option>
-                  <option value="etudiant">Étudiant</option>
                   <option value="frere_soeur">Frère / Sœur</option>
                   <option value="autre">Autre</option>
                 </select>
@@ -301,6 +340,187 @@ export default function Register() {
           </p>
         </div>
       </div>
+
+      {/* ✅ MODALE DE SUCCÈS */}
+      {modalSuccesOuverte && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContainer}>
+            {/* Bouton fermer */}
+            <button
+              onClick={() => navigate('/connexion')}
+              style={styles.modalCloseBtn}
+              aria-label="Fermer"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Icône succès */}
+            <div style={styles.modalIconWrapper}>
+              <div style={styles.modalIconCircle}>
+                <CheckCircle size={36} color="#fff" />
+              </div>
+            </div>
+
+            {/* Titre */}
+            <h2 style={styles.modalTitle}>Inscription réussie !</h2>
+
+            {/* Message principal */}
+            <p style={styles.modalMessage}>
+              Un email de confirmation a été envoyé à :
+            </p>
+
+            {/* Email en surbrillance */}
+            <div style={styles.modalEmailBox}>
+              <Mail size={16} color="#4F46E5" />
+              <span style={styles.modalEmail}>{emailInscrit}</span>
+            </div>
+
+            {/* Instructions */}
+            <p style={styles.modalInstructions}>
+              Cliquez sur le lien dans l'email pour <strong>vérifier votre compte</strong> avant de vous connecter.
+            </p>
+
+            {/* Info anti-spam */}
+            <div style={styles.modalInfoBox}>
+              💡 Pensez à vérifier vos <strong>spams</strong> si vous ne voyez pas l'email.
+            </div>
+
+            {/* Bouton principal */}
+            <button
+              onClick={() => navigate('/connexion')}
+              style={styles.modalButton}
+            >
+              Aller à la connexion
+            </button>
+
+            {/* Compte à rebours */}
+            <p style={styles.modalCountdown}>
+              Redirection automatique dans <strong>{compteARebours}</strong> seconde{compteARebours > 1 ? 's' : ''}…
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+// ===== STYLES DE LA MODALE =====
+const styles = {
+  modalOverlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(15, 23, 42, 0.6)',
+    backdropFilter: 'blur(6px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 3000,
+    padding: 20,
+    animation: 'fadeIn 0.2s ease-out',
+  },
+  modalContainer: {
+    background: '#fff',
+    borderRadius: 20,
+    padding: '40px 32px 28px',
+    maxWidth: 440,
+    width: '100%',
+    textAlign: 'center',
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    position: 'relative',
+    animation: 'slideUp 0.3s ease-out',
+  },
+  modalCloseBtn: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    background: '#F3F4F6',
+    border: 'none',
+    borderRadius: 8,
+    width: 32,
+    height: 32,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#6B7280',
+  },
+  modalIconWrapper: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  modalIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, #10B981, #059669)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 10px 25px rgba(16, 185, 129, 0.3)',
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 700,
+    color: '#111827',
+    margin: '0 0 12px 0',
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    margin: '0 0 16px 0',
+    lineHeight: 1.5,
+  },
+  modalEmailBox: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    background: '#EEF2FF',
+    borderRadius: 10,
+    padding: '12px 16px',
+    marginBottom: 20,
+    border: '1px solid #C7D2FE',
+  },
+  modalEmail: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: '#4F46E5',
+    wordBreak: 'break-all',
+  },
+  modalInstructions: {
+    fontSize: 13,
+    color: '#4B5563',
+    margin: '0 0 16px 0',
+    lineHeight: 1.6,
+  },
+  modalInfoBox: {
+    background: '#FEF3C7',
+    borderRadius: 8,
+    padding: '10px 14px',
+    fontSize: 12,
+    color: '#92400E',
+    marginBottom: 24,
+    textAlign: 'left',
+    border: '1px solid #FDE68A',
+  },
+  modalButton: {
+    width: '100%',
+    padding: '14px',
+    borderRadius: 10,
+    border: 'none',
+    background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    marginBottom: 12,
+    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+    transition: 'transform 0.15s',
+  },
+  modalCountdown: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    margin: 0,
+  },
+};

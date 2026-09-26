@@ -12,6 +12,13 @@ Route::middleware(CorsLocal::class)->group(function () {
     Route::post('/auth/register', [AuthController::class, 'inscription']);
     Route::post('/auth/connexion', [AuthController::class, 'connexion']);
     Route::post('/auth/login', [AuthController::class, 'connexion']);
+
+
+    // ✅ Publique : le citoyen n'est pas encore connecté
+    Route::post('/auth/verifier-email', [AuthController::class, 'verifierEmail'])
+        ->middleware('throttle:10,1');
+    Route::post('/auth/renvoyer-verification', [AuthController::class, 'renvoyerVerification'])
+        ->middleware('throttle:3,1');
     Route::get('/types-actes', [TypeActeController::class, 'index']);
 
     Route::options('/{any}', function () {
@@ -33,8 +40,7 @@ Route::middleware(CorsLocal::class)->group(function () {
         Route::delete('/demandes/{id}/annuler', [DemandeController::class, 'annuler']);
         // Route POST pour la création de demande groupée
         Route::post('/demandes/groupe', [DemandeController::class, 'storeGroupe']);
-    
-        // Vous avez probablement aussi cette route GET (ce qui explique pourquoi GET est supporté)
+      // Vous avez probablement aussi cette route GET (ce qui explique pourquoi GET est supporté)
         Route::get('/demandes/groupe', [DemandeController::class, 'index']);
         Route::get('/demandes/{reference}/statut', [DemandeController::class, 'verifierStatut']);
         // --- ✅ NOTIFICATIONS (AJOUTÉ) ---
