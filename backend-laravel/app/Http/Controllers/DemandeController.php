@@ -27,7 +27,8 @@ class DemandeController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Demande::with(['citoyen', 'demandeActes.acte', 'traiteur']);
+        $query = Demande::with(['citoyen', 'demandeActes.acte', 'traiteur'])
+            ->where('statut', '!=', 'archivée');
 
         if ($request->filled('statut') && $request->statut !== 'tous') {
             $query->where('statut', $request->statut);

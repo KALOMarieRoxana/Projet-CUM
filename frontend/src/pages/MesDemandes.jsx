@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useDashboardData } from '../context/DashboardDataContext';
 import { useTheme } from '../theme/ThemeContext';
 import ThemeSwitcher from '../components/ThemeSwitcher';
-import api from '../api/axiosConfig';
 import {
   FileText, Clock, CheckCircle, LogOut, Plus,
   User, Home, ArrowLeft, Eye,
@@ -70,41 +70,24 @@ export default function MesDemandes() {
   const { utilisateur, deconnecter } = useAuth();
   const { colors } = useTheme();
   const navigate = useNavigate();
-  const [demandes, setDemandes] = useState([]);
-  const [chargement, setChargement] = useState(true);
-  const [erreur, setErreur] = useState('');
-  const dejaCharge = useRef(false);
+
+  // ✅ Les demandes viennent du context partagé avec le tableau de bord.
+  // Si elles ont déjà été chargées (via Dashboard ou directement ici),
+  // aucun nouveau fetch n'est déclenché en revenant sur cette page.
+  const { mesDemandes: demandes, chargement, erreur } = useDashboardData();
+
   const [filtreStatut, setFiltreStatut] = useState('tous');
   const [recherche, setRecherche] = useState('');
   const [demandeSelectionnee, setDemandeSelectionnee] = useState(null);
   const [modalOuverte, setModalOuverte] = useState(false);
   const menuRef = useRef(null);
 
+  // Simple garde d'accès : le chargement des données est géré par le context
   useEffect(() => {
     if (!utilisateur) {
-      dejaCharge.current = false;
       navigate('/connexion');
-      return;
     }
-
-    if (dejaCharge.current) return;
-    dejaCharge.current = true;
-
-    chargerDemandes();
   }, [utilisateur, navigate]);
-
-  const chargerDemandes = async () => {
-    try {
-      setChargement(true);
-      const res = await api.get('/demandes/mes-demandes');
-      setDemandes(res.data.demandes || []);
-    } catch (err) {
-      console.error('Erreur chargement demandes:', err);
-      setErreur('Impossible de charger vos demandes. Veuillez réessayer.');
-    } finally {
-      setChargement(false);
-    }
-  };
 
   const gererDeconnexion = () => {
     deconnecter();
@@ -185,6 +168,9 @@ export default function MesDemandes() {
     return item.supplement_nom || null;
   };
 
+  // Ce chargement ne s'affiche que lors du tout premier accès à l'application
+  // (avant que le context n'ait jamais rien mis en cache). Un retour depuis une
+  // autre page (Statistiques, Tableau de bord...) ne le redéclenche pas.
   if (chargement) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: colors.bg }}>
@@ -419,7 +405,6 @@ export default function MesDemandes() {
                         </div>
                       )}
 
-                      {/* ✅ MOTIF DE REFUS (si refusée) — placé dans la boucle */}
                       {demande.statut === 'refusée' && demande.commentaire_admin && (
                         <div style={{
                           marginTop: 10,
@@ -507,7 +492,6 @@ export default function MesDemandes() {
               </div>
             </div>
 
-            {/* ✅ Motif de refus dans le modal */}
             {demandeSelectionnee.statut === 'refusée' && demandeSelectionnee.commentaire_admin && (
               <div style={{ marginBottom: 20, padding: '12px 16px', background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: 8, fontSize: 13, color: '#991B1B' }}>
                 <strong>❌ Motif du refus :</strong>

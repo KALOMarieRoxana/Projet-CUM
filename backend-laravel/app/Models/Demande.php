@@ -67,7 +67,7 @@ class Demande extends Model
     // ============================================================
     public function citoyen(): BelongsTo
     {
-        return $this->belongsTo(Citoyen::class, 'citoyen_id');
+        return $this->belongsTo(Citoyen::class, 'citoyen_id', 'id_citoyens');
     }
     public function traitePar()
     {

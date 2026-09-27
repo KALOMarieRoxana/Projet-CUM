@@ -13,9 +13,13 @@
     </div>
     <div>
         @if($citoyen->actif)
-            <span class="badge bg-success px-3 py-2"><i class="bi bi-check-circle"></i> Actif</span>
+            <span class="badge bg-success px-3 py-2">
+                <i class="bi bi-check-circle"></i> Actif
+            </span>
         @else
-            <span class="badge bg-danger px-3 py-2"><i class="bi bi-x-circle"></i> Désactivé</span>
+            <span class="badge bg-danger px-3 py-2">
+                <i class="bi bi-x-circle"></i> Désactivé
+            </span>
         @endif
     </div>
 </div>
@@ -24,23 +28,46 @@
     {{-- Infos personnelles --}}
     <div class="col-md-6">
         <div class="content-card p-4">
-            <h5 class="fw-bold mb-3">👤 Informations personnelles</h5>
+            <h5 class="fw-bold mb-3">
+                <i class="bi bi-person-circle text-primary me-2"></i>Informations personnelles
+            </h5>
             <table class="table table-sm">
-                <tr><th width="150">Nom :</th><td>{{ $citoyen->nom }}</td></tr>
-                <tr><th>Prénom :</th><td>{{ $citoyen->prenom }}</td></tr>
-                <tr><th>Email :</th><td>{{ $citoyen->email }}</td></tr>
-                <tr><th>Contact :</th><td>{{ $citoyen->contact ?? '—' }}</td></tr>
-                <tr><th>Adresse :</th><td>{{ $citoyen->adresse ?? '—' }}</td></tr>
-                <tr><th>Relation :</th><td>{{ $citoyen->relation ?? '—' }}</td></tr>
-                <tr><th>Inscription :</th><td>{{ $citoyen->created_at->format('d/m/Y à H:i') }}</td></tr>
+                <tr>
+                    <th width="150"><i class="bi bi-person me-1 text-muted"></i>Nom :</th>
+                    <td>{{ $citoyen->nom }}</td>
+                </tr>
+                <tr>
+                    <th><i class="bi bi-person me-1 text-muted"></i>Prénom :</th>
+                    <td>{{ $citoyen->prenom }}</td>
+                </tr>
+                <tr>
+                    <th><i class="bi bi-envelope me-1 text-muted"></i>Email :</th>
+                    <td>{{ $citoyen->email }}</td>
+                </tr>
+                <tr>
+                    <th><i class="bi bi-telephone me-1 text-muted"></i>Contact :</th>
+                    <td>{{ $citoyen->contact ?? '—' }}</td>
+                </tr>
+                <tr>
+                    <th><i class="bi bi-geo-alt me-1 text-muted"></i>Adresse :</th>
+                    <td>{{ $citoyen->adresse ?? '—' }}</td>
+                </tr>
+                <tr>
+                    <th><i class="bi bi-people me-1 text-muted"></i>Relation :</th>
+                    <td>{{ $citoyen->relation ?? '—' }}</td>
+                </tr>
+                <tr>
+                    <th><i class="bi bi-calendar-check me-1 text-muted"></i>Inscription :</th>
+                    <td>{{ $citoyen->created_at->format('d/m/Y à H:i') }}</td>
+                </tr>
                 @if(!$citoyen->actif && $citoyen->desactive_le)
                     <tr>
-                        <th>Désactivé le :</th>
+                        <th><i class="bi bi-calendar-x me-1 text-muted"></i>Désactivé le :</th>
                         <td>{{ $citoyen->desactive_le->format('d/m/Y à H:i') }}</td>
                     </tr>
                     @if($citoyen->raison_desactivation)
                         <tr>
-                            <th>Raison :</th>
+                            <th><i class="bi bi-exclamation-triangle me-1 text-muted"></i>Raison :</th>
                             <td class="text-danger">{{ $citoyen->raison_desactivation }}</td>
                         </tr>
                     @endif
@@ -52,10 +79,14 @@
     {{-- Pièces d'identité --}}
     <div class="col-md-6">
         <div class="content-card p-4">
-            <h5 class="fw-bold mb-3">🆔 Pièces d'identité</h5>
+            <h5 class="fw-bold mb-3">
+                <i class="bi bi-person-vcard text-primary me-2"></i>Pièces d'identité
+            </h5>
             <div class="row g-3">
                 <div class="col-md-6">
-                    <div class="text-muted small mb-1">CIN Recto</div>
+                    <div class="text-muted small mb-1">
+                        <i class="bi bi-image me-1"></i>CIN Recto
+                    </div>
                     @if($citoyen->cin_recto)
                         <img src="{{ asset('storage/' . $citoyen->cin_recto) }}"
                              alt="CIN Recto"
@@ -67,7 +98,9 @@
                     @endif
                 </div>
                 <div class="col-md-6">
-                    <div class="text-muted small mb-1">CIN Verso</div>
+                    <div class="text-muted small mb-1">
+                        <i class="bi bi-image me-1"></i>CIN Verso
+                    </div>
                     @if($citoyen->cin_verso)
                         <img src="{{ asset('storage/' . $citoyen->cin_verso) }}"
                              alt="CIN Verso"
@@ -85,7 +118,11 @@
     {{-- Demandes du citoyen --}}
     <div class="col-md-12">
         <div class="content-card p-4">
-            <h5 class="fw-bold mb-3">📋 Demandes du citoyen ({{ $citoyen->demandes->count() }})</h5>
+            <h5 class="fw-bold mb-3">
+                <i class="bi bi-folder2-open text-primary me-2"></i>
+                Demandes du citoyen
+                <span class="badge bg-primary ms-2">{{ $citoyen->demandes->count() }}</span>
+            </h5>
 
             @if($citoyen->demandes->count() > 0)
                 <div class="table-responsive">
@@ -103,32 +140,49 @@
                         <tbody>
                             @foreach($citoyen->demandes as $demande)
                                 <tr>
-                                    <td><strong>{{ $demande->reference }}</strong></td>
+                                    <td>
+                                        <i class="bi bi-hash text-muted me-1"></i>
+                                        <strong>{{ $demande->reference }}</strong>
+                                    </td>
                                     <td>
                                         @foreach($demande->demandeActes as $acte)
                                             <div style="font-size: 12px;">
-                                                📄 {{ $acte->typeActe->nom ?? 'Acte' }} × {{ $acte->quantite }}
+                                                <i class="bi bi-file-earmark-text text-primary me-1"></i>
+                                                {{ $acte->typeActe->nom ?? 'Acte' }} × {{ $acte->quantite }}
                                             </div>
                                         @endforeach
                                     </td>
                                     <td>
+                                        <i class="bi bi-cash-coin text-success me-1"></i>
                                         <strong>{{ number_format($demande->prix_total ?? 0, 0, ',', ' ') }} Ar</strong>
                                     </td>
                                     <td>
                                         @if($demande->statut === 'acceptée' || $demande->statut === 'acceptee')
-                                            <span class="badge bg-success">Acceptée</span>
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle me-1"></i>Acceptée
+                                            </span>
                                         @elseif($demande->statut === 'refusée' || $demande->statut === 'refusee')
-                                            <span class="badge bg-danger">Refusée</span>
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-x-circle me-1"></i>Refusée
+                                            </span>
                                         @elseif($demande->statut === 'archivée')
-                                            <span class="badge bg-secondary">Archivée</span>
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-archive me-1"></i>Archivée
+                                            </span>
                                         @else
-                                            <span class="badge bg-warning">En attente</span>
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-clock-history me-1"></i>En attente
+                                            </span>
                                         @endif
                                     </td>
-                                    <td>{{ $demande->created_at->format('d/m/Y') }}</td>
+                                    <td>
+                                        <i class="bi bi-calendar3 text-muted me-1"></i>
+                                        {{ $demande->created_at->format('d/m/Y') }}
+                                    </td>
                                     <td class="text-end">
                                         <a href="{{ route('super-admin.demandes.show', $demande->id_demande) }}"
-                                           class="btn btn-sm btn-outline-info">
+                                           class="btn btn-sm btn-outline-info"
+                                           title="Voir les détails">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                     </td>

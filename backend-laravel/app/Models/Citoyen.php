@@ -56,6 +56,6 @@ class Citoyen extends Authenticatable
 
     public function demandes()
     {
-        return $this->hasMany(Demande::class, 'id_citoyens', 'id_citoyens');
+        return $this->hasMany(Demande::class, 'citoyen_id', 'id_citoyens');
     }
 }

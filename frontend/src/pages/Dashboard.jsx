@@ -1,6 +1,7 @@
-﻿import { useEffect, useState, useRef, useCallback } from 'react';
+﻿import { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useDashboardData } from '../context/DashboardDataContext';
 import { useTheme } from '../theme/ThemeContext';
 import ThemeSwitcher from '../components/ThemeSwitcher';
 import NotificationBell from '../components/NotificationBell';
@@ -14,17 +15,25 @@ import {
 import logo from '../assets/image/logo.png';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
-const POLLING_INTERVAL = 30000; // 30 secondes
 
 export default function Dashboard() {
   const { utilisateur, deconnecter } = useAuth();
   const { colors } = useTheme();
   const navigate = useNavigate();
-  const [profilDetaille, setProfilDetaille] = useState(null);
-  const [mesDemandes, setMesDemandes] = useState([]);
-  const [erreur, setErreur] = useState('');
-  const [chargement, setChargement] = useState(true);
-  const [typesActes, setTypesActes] = useState([]);
+
+  // ✅ Les données viennent maintenant du context : pas de refetch au remontage.
+  // Si on est déjà passé une fois par le tableau de bord, elles sont déjà en mémoire.
+  const {
+    profilDetaille,
+    mesDemandes,
+    typesActes,
+    chargement,
+    erreur,
+    dernierEvenement,
+    compteurNotifications,
+    viderDernierEvenement,
+  } = useDashboardData();
+
   const [menuProfilOuvert, setMenuProfilOuvert] = useState(false);
   const [modalCompteOuvert, setModalCompteOuvert] = useState(false);
   const [modalChangerMdpOuvert, setModalChangerMdpOuvert] = useState(false);
@@ -38,15 +47,11 @@ export default function Dashboard() {
   const [succesMdp, setSuccesMdp] = useState('');
   const [chargementMdp, setChargementMdp] = useState(false);
 
-  // ✅ NOUVEAU : notification temps réel
+  // Notification temps réel affichée en toast : reflète dernierEvenement du context
   const [notificationRecente, setNotificationRecente] = useState(null);
-  // ✅ NOUVEAU : compteur de rafraîchissement pour forcer le NotificationBell
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const menuRef = useRef(null);
   const modalRef = useRef(null);
-  const pollingRef = useRef(null);
-  const demandesRef = useRef([]); // ✅ Référence pour comparer sans stale closure
 
   const COULEURS_STATUT = {
     'en_attente': { bg: '#FEF3C7', texte: '#92400E', border: '#F59E0B', icon: Clock },
@@ -62,12 +67,6 @@ export default function Dashboard() {
     divorces: 'Acte de divorce',
   };
 
-  // ✅ Synchroniser demandesRef avec mesDemandes
-  useEffect(() => {
-    demandesRef.current = mesDemandes;
-  }, [mesDemandes]);
-
-  // ✅ Fonction robuste pour extraire le nom du type d'acte
   const getNomTypeActe = (acte) => {
     if (!acte) return 'Acte';
 
@@ -106,7 +105,6 @@ export default function Dashboard() {
     return 'Acte';
   };
 
-  // ✅ Fonction pour obtenir le nom du supplément (sous-type)
   const getNomSupplement = (acte) => {
     if (!acte) return null;
 
@@ -123,113 +121,27 @@ export default function Dashboard() {
     return null;
   };
 
-  // ✅ Chargement initial complet (avec loader)
-  const chargerDonnees = async () => {
-    try {
-      setChargement(true);
-      const [resProfil, resDemandes, resTypes] = await Promise.all([
-        api.get('/auth/profil'),
-        api.get('/demandes/mes-demandes'),
-        api.get('/types-actes')
-      ]);
-      setProfilDetaille(resProfil.data.utilisateur);
-      const demandes = resDemandes.data.demandes || [];
-      setMesDemandes(demandes);
-      setTypesActes(resTypes.data.types_actes || resTypes.data || []);
-    } catch (err) {
-      setErreur('Impossible de charger vos données.');
-    } finally {
-      setChargement(false);
-    }
-  };
-
-  // ✅ NOUVEAU : Rechargement silencieux (sans loader) + détection changements
-  const chargerDemandesSilencieusement = useCallback(async () => {
-    try {
-      const res = await api.get('/demandes/mes-demandes');
-      const nouvellesDemandes = res.data.demandes || [];
-      const anciennesDemandes = demandesRef.current;
-
-      // 🔔 Détecter les changements de statut
-      let changementDetecte = false;
-      nouvellesDemandes.forEach(nouvelle => {
-        const ancienne = anciennesDemandes.find(d => d.id_demande === nouvelle.id_demande);
-
-        // Cas 1 : Demande déjà connue → changement de statut
-        if (ancienne && ancienne.statut !== nouvelle.statut) {
-          changementDetecte = true;
-          if (nouvelle.statut === 'acceptée') {
-            setNotificationRecente({
-              type: 'success',
-              message: `🎉 Votre demande ${nouvelle.reference || `DEM-${nouvelle.id_demande}`} a été ACCEPTÉE !`,
-            });
-          } else if (nouvelle.statut === 'refusée') {
-            setNotificationRecente({
-              type: 'error',
-              message: `❌ Votre demande ${nouvelle.reference || `DEM-${nouvelle.id_demande}`} a été REFUSÉE.`,
-            });
-          }
-        }
-
-        // Cas 2 : Nouvelle demande jamais vue → notification
-        if (!ancienne) {
-          changementDetecte = true;
-          setNotificationRecente({
-            type: 'success',
-            message: `📄 Nouvelle demande ${nouvelle.reference || `DEM-${nouvelle.id_demande}`} enregistrée.`,
-          });
-        }
-      });
-
-      // ✅ Mettre à jour les demandes si changement
-      if (changementDetecte) {
-        setMesDemandes(nouvellesDemandes);
-        // ✅ Forcer le rafraîchissement du NotificationBell
-        setRefreshKey(prev => prev + 1);
-
-        // ✅ Auto-fermer la notification après 6s
-        setTimeout(() => setNotificationRecente(null), 6000);
-      } else {
-        // Pas de changement → mise à jour discrète quand même (pour PDF, etc.)
-        setMesDemandes(nouvellesDemandes);
-      }
-    } catch (err) {
-      console.error('Erreur rechargement silencieux:', err);
-    }
-  }, []);
-
-  // ✅ Chargement initial
+  // Simple garde d'accès : ne déclenche plus de chargement, le context s'en charge
   useEffect(() => {
-    if (!utilisateur) { navigate('/connexion'); return; }
-    chargerDonnees();
+    if (!utilisateur) { navigate('/connexion'); }
   }, [utilisateur, navigate]);
 
-  // ✅ POLLING AUTOMATIQUE : toutes les 30 secondes
+  // Affiche le toast quand le context signale un événement (changement de statut,
+  // nouvelle demande...), même si l'événement a été détecté pendant qu'on était
+  // sur une autre page (Statistiques par exemple) grâce au polling centralisé.
   useEffect(() => {
-    if (!utilisateur) return;
+    if (!dernierEvenement) return;
 
-    pollingRef.current = setInterval(() => {
-      chargerDemandesSilencieusement();
-    }, POLLING_INTERVAL);
+    setNotificationRecente(dernierEvenement);
+    const t = setTimeout(() => {
+      setNotificationRecente(null);
+      viderDernierEvenement();
+    }, 6000);
 
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, [utilisateur, chargerDemandesSilencieusement]);
+    return () => clearTimeout(t);
+  }, [dernierEvenement, viderDernierEvenement]);
 
-  // ✅ RAFRAÎCHIR quand l'utilisateur revient sur l'onglet
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && utilisateur) {
-        chargerDemandesSilencieusement();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [utilisateur, chargerDemandesSilencieusement]);
-
-  // ✅ Fermer le menu si clic extérieur
+  // Fermer le menu si clic extérieur
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -386,8 +298,8 @@ export default function Dashboard() {
             </h1>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            {/* ✅ refreshKey force le NotificationBell à se recharger */}
-            <NotificationBell key={refreshKey} />
+            {/* compteurNotifications (du context) force le NotificationBell à se recharger */}
+            <NotificationBell key={compteurNotifications} />
             <ThemeSwitcher />
 
             <Link to="/nouvelle-demande" style={{ textDecoration: 'none' }}>
@@ -453,7 +365,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ✅ NOTIFICATION TEMPS RÉEL (changement de statut) */}
+        {/* NOTIFICATION TEMPS RÉEL (changement de statut, alimentée par le context) */}
         {notificationRecente && (
           <div
             style={{
@@ -479,7 +391,10 @@ export default function Dashboard() {
             <Bell size={18} />
             <span style={{ flex: 1 }}>{notificationRecente.message}</span>
             <button
-              onClick={() => setNotificationRecente(null)}
+              onClick={() => {
+                setNotificationRecente(null);
+                viderDernierEvenement();
+              }}
               style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: 2 }}
             >
               <X size={16} />
@@ -487,7 +402,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ✅ NOTIFICATION DES DEMANDES ACCEPTÉES */}
+        {/* NOTIFICATION DES DEMANDES ACCEPTÉES */}
         {notifications.length > 0 && (
           <div style={{ background: '#D1FAE5', border: '1px solid #10B981', borderRadius: 12, padding: 16, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -535,6 +450,8 @@ export default function Dashboard() {
             </Link>
           </div>
 
+          {/* chargement ne vaut true que lors du tout premier accès (avant que le context
+              n'ait jamais rien mis en cache) ; un retour depuis Statistiques ne le redéclenche pas */}
           {chargement ? (
             <div style={{ padding: 24, textAlign: 'center', color: colors.textSecondary, fontSize: 13 }}>Chargement…</div>
           ) : mesDemandes.length === 0 ? (
@@ -566,14 +483,11 @@ export default function Dashboard() {
                       gap: 16
                     }}
                   >
-                    {/* ICÔNE STATUT */}
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: config.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 4 }}>
                       <IconStatut size={18} color={config.texte} />
                     </div>
 
-                    {/* BLOC PRINCIPAL */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* Ligne 1 : Référence + Date */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: colors.text }}>
                           {d.reference || `DEM-${d.id_demande}`}
@@ -583,7 +497,6 @@ export default function Dashboard() {
                         </span>
                       </div>
 
-                      {/* Ligne 2 : Demandeur / Concerné */}
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, fontSize: 12, color: colors.textSecondary, marginBottom: 6 }}>
                         <div>
                           <span style={{ fontWeight: 500 }}>Demandeur :</span> {d.demandeur_prenom} {d.demandeur_nom}
@@ -593,7 +506,6 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      {/* Ligne 3 : Nombre d'actes + Détail */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, color: colors.textSecondary, marginBottom: 6 }}>
                         <div>
                           <span style={{ fontWeight: 500 }}>Nombre d'actes :</span> {nbActes}
@@ -644,7 +556,6 @@ export default function Dashboard() {
                         )}
                       </div>
 
-                      {/* Ligne 4 : Prix + Service */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: colors.primary }}>
                           {new Intl.NumberFormat('fr-FR').format(totalPrix || d.prix_total || d.prix || 0)} Ar
@@ -661,7 +572,6 @@ export default function Dashboard() {
                         )}
                       </div>
 
-                      {/* MOTIF DU REFUS */}
                       {d.statut === 'refusée' && d.commentaire_admin && (
                         <div
                           style={{
@@ -687,7 +597,6 @@ export default function Dashboard() {
                         </div>
                       )}
 
-                      {/* ✅ BOUTON PDF — EN BAS */}
                       {d.statut === 'acceptée' && d.pdf_path && (
                         <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px dashed ${colors.cardBorder}` }}>
                           <a
@@ -717,7 +626,6 @@ export default function Dashboard() {
                       )}
                     </div>
 
-                    {/* BADGE STATUT */}
                     <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, background: config.bg, color: config.texte, fontWeight: 600, border: `1px solid ${config.border}33`, flexShrink: 0 }}>
                       {d.statut}
                     </span>

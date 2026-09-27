@@ -10,6 +10,7 @@ import Statistiques from './pages/Statistiques';
 import MesTelechargements from './pages/MesTelechargements';
 import AdminDemandes from './pages/AdminDemandes';
 import Home from './pages/Home';
+import { DashboardDataProvider } from './context/DashboardDataContext';
 import Information from './pages/Information';
 
 function RouteProtegee({ children }) {
@@ -39,9 +40,17 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      {/* ✅ DashboardDataProvider enveloppe les routes, à l'intérieur de AuthProvider
+          (il a besoin de useAuth pour savoir quand charger/vider les données).
+          Comme il ne se démonte jamais entre les pages, les données du tableau de
+          bord (profil, demandes, types d'actes) restent en mémoire pendant toute
+          la session : aller sur Statistiques puis revenir sur le tableau de bord
+          ne redéclenche plus de chargement. */}
+      <DashboardDataProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </DashboardDataProvider>
     </AuthProvider>
   );
 }

@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useDashboardData } from '../context/DashboardDataContext';
 import { useTheme } from '../theme/ThemeContext';
 import ThemeSwitcher from '../components/ThemeSwitcher';
-import api from '../api/axiosConfig';
 import {
   Clock, CheckCircle, XCircle, FileText, TrendingUp,
   LogOut, Plus, Home, BarChart3, Download, ArrowLeft,
@@ -23,35 +23,22 @@ export default function Statistiques() {
   const { colors } = useTheme();
   const navigate = useNavigate();
 
-  // ✅ État local — plus de props !
-  const [demandes, setDemandes] = useState([]);
-  const [chargement, setChargement] = useState(true);
+  // ✅ Les demandes viennent du context partagé avec le tableau de bord et
+  // "Mes demandes". Si elles ont déjà été chargées ailleurs, aucun nouveau
+  // fetch n'est déclenché en arrivant sur cette page : affichage instantané.
+  const { mesDemandes, chargement } = useDashboardData();
+
   const [periodeStats, setPeriodeStats] = useState('12mois');
 
-  // ✅ Sécurisation : toujours un tableau
-  const demandesSafe = Array.isArray(demandes) ? demandes : [];
+  // Sécurisation : toujours un tableau
+  const demandesSafe = Array.isArray(mesDemandes) ? mesDemandes : [];
 
+  // Simple garde d'accès : le chargement des données est géré par le context
   useEffect(() => {
     if (!utilisateur) {
       navigate('/connexion');
-      return;
     }
-    chargerDemandes();
   }, [utilisateur, navigate]);
-
-  const chargerDemandes = async () => {
-    try {
-      setChargement(true);
-      const res = await api.get('/demandes/mes-demandes');
-      const data = res.data?.demandes || res.data || [];
-      setDemandes(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Erreur chargement demandes:', err);
-      setDemandes([]);
-    } finally {
-      setChargement(false);
-    }
-  };
 
   const gererDeconnexion = () => {
     deconnecter();
@@ -151,6 +138,9 @@ export default function Statistiques() {
     refusees: demandesSafe.filter(d => d.statut === 'refusée').length,
   };
 
+  // Ce chargement ne s'affiche que lors du tout premier accès à l'application
+  // (avant que le context n'ait jamais rien mis en cache). Un retour depuis
+  // le tableau de bord ou "Mes demandes" ne le redéclenche pas.
   if (chargement) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: colors.bg }}>

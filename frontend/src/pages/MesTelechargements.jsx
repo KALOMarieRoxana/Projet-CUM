@@ -11,13 +11,19 @@ import logo from '../assets/image/logo.png';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
 
+// ✅ Cache en mémoire (au niveau du module), partagé entre tous les montages
+// du composant. Tant que l'onglet n'est pas rechargé, la liste des documents
+// n'est récupérée qu'une seule fois via l'API : si on quitte la page puis
+// qu'on y revient, les documents déjà connus sont réutilisés instantanément,
+// sans nouvel appel réseau et sans réafficher un état de chargement.
+let demandesCacheGlobal = null;
+
 export default function MesTelechargements() {
     const { utilisateur, deconnecter } = useAuth();
     const { colors } = useTheme();
     const navigate = useNavigate();
-    
-    const [demandes, setDemandes] = useState([]);
-    const [chargement, setChargement] = useState(true);
+
+    const [demandes, setDemandes] = useState(demandesCacheGlobal || []);
     const [erreur, setErreur] = useState('');
     const [recherche, setRecherche] = useState('');
     const [pdfSelectionne, setPdfSelectionne] = useState(null);
@@ -31,22 +37,28 @@ export default function MesTelechargements() {
     }, [utilisateur, navigate]);
 
     const chargerDemandes = async () => {
+        // ✅ Si la liste est déjà en cache (visite précédente pendant cette
+        // session de navigation), on l'affiche directement sans appel API
+        // et sans passer par un quelconque état de chargement.
+        if (demandesCacheGlobal) {
+            setDemandes(demandesCacheGlobal);
+            return;
+        }
+
         try {
-            setChargement(true);
             const res = await api.get('/demandes/mes-demandes');
             const toutes = res.data.demandes || [];
-            
+
             // ✅ Filtrer : garder seulement celles avec PDF
-            const avecPdf = toutes.filter(d => 
+            const avecPdf = toutes.filter(d =>
                 d.statut === 'acceptée' && d.pdf_path
             );
-            
+
+            demandesCacheGlobal = avecPdf; // mise en cache pour les prochains montages
             setDemandes(avecPdf);
         } catch (err) {
             console.error('Erreur:', err);
             setErreur('Impossible de charger vos documents.');
-        } finally {
-            setChargement(false);
         }
     };
 
@@ -73,14 +85,6 @@ export default function MesTelechargements() {
             d.personne_prenom?.toLowerCase().includes(search)
         );
     });
-
-    if (chargement) {
-        return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: colors.bg }}>
-                <div style={{ fontSize: 16, color: colors.textSecondary }}>Chargement...</div>
-            </div>
-        );
-    }
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: 'Inter, sans-serif' }}>
@@ -294,7 +298,7 @@ export default function MesTelechargements() {
                                             📅 Traité le
                                         </div>
                                         <div style={{ fontSize: 13, color: colors.text }}>
-                                            {demande.date_traitement 
+                                            {demande.date_traitement
                                                 ? new Date(demande.date_traitement).toLocaleString('fr-FR')
                                                 : '—'
                                             }

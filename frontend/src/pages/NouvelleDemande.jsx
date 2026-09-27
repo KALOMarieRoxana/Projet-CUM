@@ -83,11 +83,17 @@ const ICONES_TYPE = {
   divorces: Scale,
 };
 
+// ✅ Cache en mémoire (au niveau du module), partagé entre tous les montages
+// du composant. Tant que l'onglet n'est pas rechargé, le profil n'est
+// récupéré qu'une seule fois via l'API : si on quitte la page puis qu'on y
+// revient, le profil déjà connu est réutilisé instantanément, sans nouvel
+// appel réseau et sans réafficher un état de chargement.
+let profilCacheGlobal = null;
+
 export default function NouvelleDemande() {
   const { utilisateur, deconnecter } = useAuth();
   const navigate = useNavigate();
-  const [profilDetaille, setProfilDetaille] = useState(null);
-  const [chargement, setChargement] = useState(true);
+  const [profilDetaille, setProfilDetaille] = useState(profilCacheGlobal);
   const [soumission, setSoumission] = useState(false);
   const [erreur, setErreur] = useState('');
   const [succes, setSucces] = useState('');
@@ -101,13 +107,13 @@ export default function NouvelleDemande() {
   const menuRef = useRef(null);
 
   const [form, setForm] = useState({
-    demandeur_nom: '',
-    demandeur_prenom: '',
-    demandeur_adresse: '',
+    demandeur_nom: profilCacheGlobal?.nom || '',
+    demandeur_prenom: profilCacheGlobal?.prenom || '',
+    demandeur_adresse: profilCacheGlobal?.adresse || '',
     demandeur_relation: 'moi_meme',
-    demandeur_contact: '',
-    personne_nom: '',
-    personne_prenom: '',
+    demandeur_contact: profilCacheGlobal?.contact || '',
+    personne_nom: profilCacheGlobal?.nom || '',
+    personne_prenom: profilCacheGlobal?.prenom || '',
     personne_numero_acte: '',
     personne_lieu_naissance: '',
     personne_date_naissance: '',
@@ -174,25 +180,36 @@ export default function NouvelleDemande() {
     setDetailsActe(initialDetails);
   }, [selectionActe.type_acte]);
 
+  const appliquerProfilAuForm = (user) => {
+    setForm(prev => ({
+      ...prev,
+      demandeur_nom: user.nom || '',
+      demandeur_prenom: user.prenom || '',
+      demandeur_adresse: user.adresse || '',
+      demandeur_contact: user.contact || '',
+      personne_nom: user.nom || '',
+      personne_prenom: user.prenom || '',
+    }));
+  };
+
   const chargerProfil = async () => {
+    // ✅ Si le profil est déjà en cache (visite précédente pendant cette
+    // session de navigation), on l'affiche directement sans appel API
+    // et sans passer par un quelconque état de chargement.
+    if (profilCacheGlobal) {
+      setProfilDetaille(profilCacheGlobal);
+      appliquerProfilAuForm(profilCacheGlobal);
+      return;
+    }
+
     try {
-      setChargement(true);
       const res = await api.get('/auth/profil');
       const user = res.data.utilisateur;
+      profilCacheGlobal = user; // mise en cache pour les prochains montages
       setProfilDetaille(user);
-      setForm(prev => ({
-        ...prev,
-        demandeur_nom: user.nom || '',
-        demandeur_prenom: user.prenom || '',
-        demandeur_adresse: user.adresse || '',
-        demandeur_contact: user.contact || '',
-        personne_nom: user.nom || '',
-        personne_prenom: user.prenom || '',
-      }));
+      appliquerProfilAuForm(user);
     } catch (err) {
       setErreur('Impossible de charger votre profil.');
-    } finally {
-      setChargement(false);
     }
   };
 
@@ -283,11 +300,10 @@ export default function NouvelleDemande() {
         }
         return copy;
       }
-      // ✅ LIGNE CORRIGÉE
-      return [...prev, { 
-        ...selectionActe, 
-        details: { ...detailsActe }, 
-        id_unique: `${selectionActe.type_acte}_${selectionActe.langue}_${selectionActe.supplement_id}_${Date.now()}` 
+      return [...prev, {
+        ...selectionActe,
+        details: { ...detailsActe },
+        id_unique: `${selectionActe.type_acte}_${selectionActe.langue}_${selectionActe.supplement_id}_${Date.now()}`
       }];
     });
 
@@ -402,11 +418,11 @@ export default function NouvelleDemande() {
 
       setProgression('');
       setSucces(`Demande envoyée avec succès ! Référence : ${response.data.reference}`);
-      
+
       const delaiHeures = form.service === 'express' ? 24 : 72;
       const now = new Date();
       const dateEstimation = new Date(now.getTime() + delaiHeures * 60 * 60 * 1000);
-      
+
       setDemandeEstimee({
         reference: response.data.reference,
         service: form.service,
@@ -415,9 +431,9 @@ export default function NouvelleDemande() {
         date_estimation: dateEstimation.toISOString(),
         prix_total: response.data.prix_total,
       });
-      
+
       setModalEstimation(true);
-      
+
     } catch (err) {
       console.error('Erreur complète:', err);
       console.error('Payload envoyé:', payload);
@@ -432,12 +448,8 @@ export default function NouvelleDemande() {
     navigate('/connexion');
   };
 
-  if (!utilisateur || chargement) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#F3F4F6' }}>
-        <div style={{ fontSize: 16, color: '#6B7280' }}>Chargement...</div>
-      </div>
-    );
+  if (!utilisateur) {
+    return null; // Le useEffect redirige automatiquement vers /connexion
   }
 
   const champsSpecifiques = CHAMPS_SPECIFIQUES[selectionActe.type_acte] || [];
@@ -863,7 +875,7 @@ export default function NouvelleDemande() {
                 <div style={{ marginTop: 12, padding: 18, borderRadius: 10, background: 'linear-gradient(135deg, #F3F4F6, #E5E7EB)', border: '1px solid #D1D5DB' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <span style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>
-                      💰 PRIX TOTAL ({totalActes} acte{totalActes > 1 ? 's' : ''})
+                       PRIX TOTAL ({totalActes} acte{totalActes > 1 ? 's' : ''})
                     </span>
                     <span style={{ fontSize: 22, fontWeight: 800, color: '#4F46E5' }}>
                       {new Intl.NumberFormat('fr-FR').format(prixTotal)} Ar

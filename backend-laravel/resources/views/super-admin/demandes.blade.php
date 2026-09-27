@@ -392,8 +392,11 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    📌 Demande #{{ $demande->reference ?? $demande->numero_reference }}
-                    <span class="badge bg-secondary ms-2">{{ $items->count() }} acte(s)</span>
+                    <i class="bi bi-pin-angle-fill text-primary me-2"></i>
+                    Demande #{{ $demande->reference ?? $demande->numero_reference }}
+                    <span class="badge bg-secondary ms-2">
+                        <i class="bi bi-journal-text me-1"></i>{{ $items->count() }} acte(s)
+                    </span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -401,39 +404,92 @@
 
                 <div class="row mb-4">
                     <div class="col-md-6">
-                        <h6><i class="bi bi-person"></i> Demandeur</h6>
+                        <h6 class="fw-bold">
+                            <i class="bi bi-person-badge text-primary me-2"></i>Demandeur
+                        </h6>
                         <table class="table table-sm table-borderless">
-                            <tr><td width="120"><strong>Nom:</strong></td><td>{{ $demande->demandeur_nom }}</td></tr>
-                            <tr><td><strong>Prénom:</strong></td><td>{{ $demande->demandeur_prenom }}</td></tr>
-                            <tr><td><strong>Adresse:</strong></td><td>{{ $demande->demandeur_adresse }}</td></tr>
-                            <tr><td><strong>Contact:</strong></td><td>{{ $demande->demandeur_contact }}</td></tr>
-                            <tr><td><strong>Relation:</strong></td><td>{{ $demande->demandeur_relation ?? 'Non spécifiée' }}</td></tr>
+                            <tr>
+                                <td width="120"><strong><i class="bi bi-person me-1 text-muted"></i>Nom :</strong></td>
+                                <td>{{ $demande->demandeur_nom }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="bi bi-person me-1 text-muted"></i>Prénom :</strong></td>
+                                <td>{{ $demande->demandeur_prenom }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="bi bi-geo-alt me-1 text-muted"></i>Adresse :</strong></td>
+                                <td>{{ $demande->demandeur_adresse }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="bi bi-telephone me-1 text-muted"></i>Contact :</strong></td>
+                                <td>{{ $demande->demandeur_contact }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="bi bi-people me-1 text-muted"></i>Relation :</strong></td>
+                                <td>{{ $demande->demandeur_relation ?? 'Non spécifiée' }}</td>
+                            </tr>
                         </table>
                     </div>
                     <div class="col-md-6">
-                        <h6><i class="bi bi-info-circle"></i> Informations</h6>
+                        <h6 class="fw-bold">
+                            <i class="bi bi-info-circle text-primary me-2"></i>Informations
+                        </h6>
                         <table class="table table-sm table-borderless">
-                            <tr><td width="120"><strong>Référence:</strong></td><td>{{ $demande->reference ?? $demande->numero_reference }}</td></tr>
-                            <tr><td><strong>Citoyen:</strong></td><td>{{ $demande->citoyen->prenom ?? '' }} {{ $demande->citoyen->nom ?? '' }}</td></tr>
-                            <tr><td><strong>Service:</strong></td><td>{{ ucfirst($demande->service) }}</td></tr>
-                            <tr><td><strong>Prix total:</strong></td><td><strong>{{ number_format($demande->prix_total ?? 0, 0, ',', ' ') }} Ar</strong></td></tr>
-                            <tr><td><strong>Statut:</strong></td><td>
-                                @if($demande->statut == 'en attente')
-                                    <span class="badge bg-warning">⏳ En attente</span>
-                                @elseif(in_array($demande->statut, ['acceptée', 'acceptee']))
-                                    <span class="badge bg-success">✅ Acceptée</span>
-                                @elseif(in_array($demande->statut, ['refusée', 'refusee']))
-                                    <span class="badge bg-danger">❌ Refusée</span>
-                                @elseif($demande->statut == 'partiellement_traitée')
-                                    <span class="badge bg-info">🔄 Partiellement traitée</span>
-                                @elseif($demande->statut == 'archivée')
-                                    <span class="badge bg-secondary">📦 Archivée</span>
-                                @endif
-                            </td></tr>
-                            <tr><td><strong>Date:</strong></td><td>{{ $demande->created_at ? $demande->created_at->format('d/m/Y H:i') : '-' }}</td></tr>
+                            <tr>
+                                <td width="120"><strong><i class="bi bi-hash me-1 text-muted"></i>Référence :</strong></td>
+                                <td>{{ $demande->reference ?? $demande->numero_reference }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="bi bi-person me-1 text-muted"></i>Citoyen :</strong></td>
+                                <td>{{ $demande->citoyen->prenom ?? '' }} {{ $demande->citoyen->nom ?? '' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="bi bi-lightning-charge me-1 text-muted"></i>Service :</strong></td>
+                                <td>{{ ucfirst($demande->service) }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="bi bi-cash-coin me-1 text-muted"></i>Prix total :</strong></td>
+                                <td><strong class="text-primary">{{ number_format($demande->prix_total ?? 0, 0, ',', ' ') }} Ar</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="bi bi-info-circle me-1 text-muted"></i>Statut :</strong></td>
+                                <td>
+                                    @if($demande->statut == 'en attente')
+                                        <span class="badge-statut badge-statut-attente">
+                                            <i class="bi bi-clock-fill"></i> En attente
+                                        </span>
+                                    @elseif(in_array($demande->statut, ['acceptée', 'acceptee']))
+                                        <span class="badge-statut badge-statut-acceptee">
+                                            <i class="bi bi-check-circle-fill"></i> Acceptée
+                                        </span>
+                                    @elseif(in_array($demande->statut, ['refusée', 'refusee']))
+                                        <span class="badge-statut badge-statut-refusee">
+                                            <i class="bi bi-x-circle-fill"></i> Refusée
+                                        </span>
+                                    @elseif($demande->statut == 'partiellement_traitée')
+                                        <span class="badge-statut badge-statut-partielle">
+                                            <i class="bi bi-arrow-repeat"></i> Partiellement traitée
+                                        </span>
+                                    @elseif($demande->statut == 'archivée')
+                                        <span class="badge-statut badge-statut-archivee">
+                                            <i class="bi bi-archive-fill"></i> Archivée
+                                        </span>
+                                    @endif
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong><i class="bi bi-calendar3 me-1 text-muted"></i>Date :</strong></td>
+                                <td>{{ $demande->created_at ? $demande->created_at->format('d/m/Y H:i') : '-' }}</td>
+                            </tr>
                             @if($demande->traitePar)
-                                <tr><td><strong>Traité par:</strong></td><td>{{ $demande->traitePar->name ?? '' }}</td></tr>
-                                <tr><td><strong>Date traitement:</strong></td><td>{{ $demande->date_traitement ? $demande->date_traitement->format('d/m/Y H:i') : '' }}</td></tr>
+                                <tr>
+                                    <td><strong><i class="bi bi-person-check me-1 text-muted"></i>Traité par :</strong></td>
+                                    <td>{{ $demande->traitePar->name ?? '' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong><i class="bi bi-clock-history me-1 text-muted"></i>Date traitement :</strong></td>
+                                    <td>{{ $demande->date_traitement ? $demande->date_traitement->format('d/m/Y H:i') : '' }}</td>
+                                </tr>
                             @endif
                         </table>
                     </div>
@@ -441,7 +497,11 @@
 
                 <hr>
 
-                <h6 class="mb-3"><i class="bi bi-list-ul"></i> Actes demandés</h6>
+                <h6 class="fw-bold mb-3">
+                    <i class="bi bi-list-ul text-primary me-2"></i>Actes demandés
+                    <span class="badge bg-primary ms-2">{{ $items->count() }}</span>
+                </h6>
+
                 @foreach($items as $index => $item)
                     @php
                         $typeNom = $item->typeActe->nom ?? $item->type_acte ?? 'Acte';
@@ -450,88 +510,125 @@
                     @endphp
                     <div class="card mb-3 {{ in_array($item->statut, ['acceptée', 'acceptee']) ? 'border-success' : (in_array($item->statut, ['refusée', 'refusee']) ? 'border-danger' : 'border-warning') }}">
                         <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                 <h6 class="card-title mb-0">
+                                    <i class="bi bi-file-earmark-text text-primary me-1"></i>
                                     {{ $index + 1 }}. {{ $typeNom }}
-                                    <span class="badge bg-secondary">x{{ $item->quantite }}</span>
-                                    <span class="badge bg-info">{{ number_format($item->sous_total ?? ($item->prix_unitaire * $item->quantite), 0, ',', ' ') }} Ar</span>
-                                    <span class="badge bg-dark">{{ strtoupper($item->langue ?? 'MG') }}</span>
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-hash me-1"></i>x{{ $item->quantite }}
+                                    </span>
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-cash-coin me-1"></i>{{ number_format($item->sous_total ?? ($item->prix_unitaire * $item->quantite), 0, ',', ' ') }} Ar
+                                    </span>
+                                    <span class="badge bg-dark">
+                                        <i class="bi bi-translate me-1"></i>{{ strtoupper($item->langue ?? 'MG') }}
+                                    </span>
                                 </h6>
                                 <div>
                                     @if($item->statut == 'en attente')
-                                        <span class="badge bg-warning">⏳ En attente</span>
+                                        <span class="badge-statut badge-statut-attente">
+                                            <i class="bi bi-clock-fill"></i> En attente
+                                        </span>
                                     @elseif(in_array($item->statut, ['acceptée', 'acceptee']))
-                                        <span class="badge bg-success">✅ Acceptée</span>
+                                        <span class="badge-statut badge-statut-acceptee">
+                                            <i class="bi bi-check-circle-fill"></i> Acceptée
+                                        </span>
                                     @elseif(in_array($item->statut, ['refusée', 'refusee']))
-                                        <span class="badge bg-danger">❌ Refusée</span>
+                                        <span class="badge-statut badge-statut-refusee">
+                                            <i class="bi bi-x-circle-fill"></i> Refusée
+                                        </span>
                                     @endif
                                     @if($item->traitePar)
-                                        <span class="badge bg-secondary">par {{ $item->traitePar->name ?? '' }}</span>
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-person-check me-1"></i>{{ $item->traitePar->name ?? '' }}
+                                        </span>
                                     @endif
                                 </div>
                             </div>
+
+                            {{-- ✅ SUPPLÉMENT / SOUS-TYPE --}}
+                            @if($item->supplement_id || $item->supplement)
+                                <div class="mt-2 p-2 rounded" style="background: #ECFDF5; border-left: 3px solid #10B981;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-paperclip text-success"></i>
+                                        <span class="fw-semibold text-success">Supplément / Sous-type :</span>
+                                        <strong>{{ $item->supplement->nom ?? $item->supplement_nom ?? 'Supplément' }}</strong>
+                                        @if($item->supplement->description ?? null)
+                                            <span class="text-muted">— {{ $item->supplement->description }}</span>
+                                        @endif
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-hash me-1"></i>x{{ $item->quantite_supplement ?? 1 }}
+                                        </span>
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-cash-coin me-1"></i>{{ number_format($item->prix_supplement ?? 0, 0, ',', ' ') }} Ar
+                                        </span>
+                                    </div>
+                                </div>
+                            @endif
 
                             <div class="mt-2" style="font-size: 0.9rem;">
                                 @if($typeSlug === 'naissance' && $details)
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <strong>Personne:</strong> {{ $details->personne_prenom ?? '' }} {{ $details->personne_nom ?? '' }}
+                                            <strong><i class="bi bi-person me-1"></i>Personne :</strong> {{ $details->personne_prenom ?? '' }} {{ $details->personne_nom ?? '' }}
                                             ({{ $details->personne_sexe ?? '' }})<br>
-                                            <strong>Né(e) le:</strong> {{ $details->personne_date_naissance ?? '' }}
+                                            <strong><i class="bi bi-calendar-event me-1"></i>Né(e) le :</strong> {{ $details->personne_date_naissance ?? '' }}
                                             à {{ $details->personne_lieu_naissance ?? '' }}
                                         </div>
                                         <div class="col-md-6">
-                                            <strong>Père:</strong> {{ $details->pere_prenom ?? '' }} {{ $details->pere_nom ?? '' }}<br>
-                                            <strong>Mère:</strong> {{ $details->mere_prenom ?? '' }} {{ $details->mere_nom ?? '' }}
+                                            <strong><i class="bi bi-person me-1"></i>Père :</strong> {{ $details->pere_prenom ?? '' }} {{ $details->pere_nom ?? '' }}<br>
+                                            <strong><i class="bi bi-person me-1"></i>Mère :</strong> {{ $details->mere_prenom ?? '' }} {{ $details->mere_nom ?? '' }}
                                             @if(!empty($details->personne_numero_acte))
-                                                <br><strong>Numéro acte:</strong> {{ $details->personne_numero_acte }}
+                                                <br><strong><i class="bi bi-hash me-1"></i>Numéro acte :</strong> {{ $details->personne_numero_acte }}
                                             @endif
                                         </div>
                                     </div>
                                 @elseif($typeSlug === 'mariage' && $details)
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <strong>Époux:</strong> {{ $details->epoux_prenom ?? '' }} {{ $details->epoux_nom ?? '' }}<br>
-                                            <strong>Né le:</strong> {{ $details->epoux_date_naissance ?? '' }}
+                                            <strong><i class="bi bi-gender-male me-1"></i>Époux :</strong> {{ $details->epoux_prenom ?? '' }} {{ $details->epoux_nom ?? '' }}<br>
+                                            <strong><i class="bi bi-calendar-event me-1"></i>Né le :</strong> {{ $details->epoux_date_naissance ?? '' }}
                                             à {{ $details->epoux_lieu_naissance ?? '' }}
                                         </div>
                                         <div class="col-md-6">
-                                            <strong>Épouse:</strong> {{ $details->epouse_prenom ?? '' }} {{ $details->epouse_nom ?? '' }}<br>
-                                            <strong>Née le:</strong> {{ $details->epouse_date_naissance ?? '' }}
+                                            <strong><i class="bi bi-gender-female me-1"></i>Épouse :</strong> {{ $details->epouse_prenom ?? '' }} {{ $details->epouse_nom ?? '' }}<br>
+                                            <strong><i class="bi bi-calendar-event me-1"></i>Née le :</strong> {{ $details->epouse_date_naissance ?? '' }}
                                             à {{ $details->epouse_lieu_naissance ?? '' }}
                                         </div>
                                         <div class="col-md-12 mt-1">
-                                            <strong>Mariage:</strong> {{ $details->date_mariage ?? '' }}
+                                            <strong><i class="bi bi-heart-fill text-danger me-1"></i>Mariage :</strong> {{ $details->date_mariage ?? '' }}
                                             à {{ $details->lieu_mariage ?? '' }}
                                         </div>
                                     </div>
                                 @elseif($typeSlug === 'deces' && $details)
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <strong>Défunt:</strong> {{ $details->defunt_prenom ?? '' }} {{ $details->defunt_nom ?? '' }}<br>
-                                            <strong>Né le:</strong> {{ $details->defunt_date_naissance ?? '' }}
+                                            <strong><i class="bi bi-person me-1"></i>Défunt :</strong> {{ $details->defunt_prenom ?? '' }} {{ $details->defunt_nom ?? '' }}<br>
+                                            <strong><i class="bi bi-calendar-event me-1"></i>Né le :</strong> {{ $details->defunt_date_naissance ?? '' }}
                                             à {{ $details->defunt_lieu_naissance ?? '' }}
                                         </div>
                                         <div class="col-md-6">
-                                            <strong>Décès:</strong> {{ $details->date_deces ?? '' }}
+                                            <strong><i class="bi bi-calendar-x me-1"></i>Décès :</strong> {{ $details->date_deces ?? '' }}
                                             à {{ $details->lieu_deces ?? '' }}<br>
-                                            <strong>Cause:</strong> {{ $details->cause_deces ?? 'Non spécifiée' }}
+                                            <strong><i class="bi bi-clipboard-pulse me-1"></i>Cause :</strong> {{ $details->cause_deces ?? 'Non spécifiée' }}
                                         </div>
                                     </div>
                                 @elseif($typeSlug === 'divorces' && $details)
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <strong>Conjoint:</strong> {{ $details->conjoint_prenom ?? '' }} {{ $details->conjoint_nom ?? '' }}<br>
-                                            <strong>Conjointe:</strong> {{ $details->conjointe_prenom ?? '' }} {{ $details->conjointe_nom ?? '' }}
+                                            <strong><i class="bi bi-gender-male me-1"></i>Conjoint :</strong> {{ $details->conjoint_prenom ?? '' }} {{ $details->conjoint_nom ?? '' }}<br>
+                                            <strong><i class="bi bi-gender-female me-1"></i>Conjointe :</strong> {{ $details->conjointe_prenom ?? '' }} {{ $details->conjointe_nom ?? '' }}
                                         </div>
                                         <div class="col-md-6">
-                                            <strong>Mariage:</strong> {{ $details->date_mariage ?? '' }}<br>
-                                            <strong>Demande:</strong> {{ $details->date_demande_divorce ?? '' }}<br>
-                                            <strong>Motif:</strong> {{ $details->motif ?? 'Non spécifié' }}
+                                            <strong><i class="bi bi-heart me-1"></i>Mariage :</strong> {{ $details->date_mariage ?? '' }}<br>
+                                            <strong><i class="bi bi-calendar-x me-1"></i>Demande :</strong> {{ $details->date_demande_divorce ?? '' }}<br>
+                                            <strong><i class="bi bi-chat-left-text me-1"></i>Motif :</strong> {{ $details->motif ?? 'Non spécifié' }}
                                         </div>
                                     </div>
                                 @else
-                                    <em class="text-muted">Aucun détail disponible</em>
+                                    <em class="text-muted">
+                                        <i class="bi bi-info-circle me-1"></i>Aucun détail disponible
+                                    </em>
                                 @endif
                             </div>
 
@@ -541,14 +638,14 @@
                                         @csrf
                                         <input type="hidden" name="action" value="accepter">
                                         <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Accepter cet acte ?')">
-                                            <i class="bi bi-check-lg"></i> Accepter
+                                            <i class="bi bi-check-lg me-1"></i>Accepter
                                         </button>
                                     </form>
                                     <form action="{{ route('super-admin.demandes.traiter-item', $item->id) }}" method="POST" class="d-inline">
                                         @csrf
                                         <input type="hidden" name="action" value="refuser">
                                         <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Refuser cet acte ?')">
-                                            <i class="bi bi-x-lg"></i> Refuser
+                                            <i class="bi bi-x-lg me-1"></i>Refuser
                                         </button>
                                     </form>
                                 </div>
@@ -560,51 +657,62 @@
                 <div class="row mt-3">
                     <div class="col-md-12">
                         <div class="alert alert-secondary">
-                            <strong>Résumé :</strong>
+                            <strong><i class="bi bi-bar-chart me-1"></i>Résumé :</strong>
                             @php
                                 $totalItems = $items->count();
                                 $acceptes = $items->filter(fn($i) => in_array($i->statut, ['acceptée', 'acceptee']))->count();
                                 $refuses = $items->filter(fn($i) => in_array($i->statut, ['refusée', 'refusee']))->count();
                                 $enAttente = $items->where('statut', 'en attente')->count();
                             @endphp
-                            <span class="badge bg-secondary">{{ $totalItems }} total</span>
-                            <span class="badge bg-success">{{ $acceptes }} acceptés</span>
-                            <span class="badge bg-danger">{{ $refuses }} refusés</span>
-                            <span class="badge bg-warning">{{ $enAttente }} en attente</span>
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-journal-text me-1"></i>{{ $totalItems }} total
+                            </span>
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle me-1"></i>{{ $acceptes }} acceptés
+                            </span>
+                            <span class="badge bg-danger">
+                                <i class="bi bi-x-circle me-1"></i>{{ $refuses }} refusés
+                            </span>
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-clock me-1"></i>{{ $enAttente }} en attente
+                            </span>
 
                             @if($demande->statut == 'partiellement_traitée')
-                                <span class="badge bg-info ms-2">⚠️ Demande partiellement traitée</span>
+                                <span class="badge bg-info ms-2">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>Demande partiellement traitée
+                                </span>
                             @endif
                         </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i>Fermer
+                </button>
 
                 @if($demande->statut == 'en attente' || $demande->statut == 'partiellement_traitée')
                     <form action="{{ route('super-admin.demandes.traiter', $demande->id_demande) }}" method="POST" class="d-inline">
                         @csrf
                         <input type="hidden" name="action" value="accepter">
                         <button type="submit" class="btn btn-success" onclick="return confirm('Tout valider ?')">
-                            <i class="bi bi-check-all"></i> Tout valider
+                            <i class="bi bi-check-all me-1"></i>Tout valider
                         </button>
                     </form>
                     <form action="{{ route('super-admin.demandes.traiter', $demande->id_demande) }}" method="POST" class="d-inline">
                         @csrf
                         <input type="hidden" name="action" value="refuser">
                         <button type="submit" class="btn btn-danger" onclick="return confirm('Tout refuser ?')">
-                            <i class="bi bi-x-circle"></i> Tout refuser
+                            <i class="bi bi-x-circle me-1"></i>Tout refuser
                         </button>
                     </form>
                 @endif
 
-                {{-- ✅ Bouton Archiver dans le modal : uniquement si PAS en attente et PAS déjà archivée --}}
                 @if($demande->statut != 'en attente' && $demande->statut != 'archivée')
                     <form action="{{ route('super-admin.demandes.archiver', $demande->id_demande) }}" method="POST" class="d-inline">
                         @csrf
                         <button type="submit" class="btn btn-secondary" onclick="return confirm('Archiver cette demande ?')">
-                            <i class="bi bi-archive"></i> Archiver
+                            <i class="bi bi-archive me-1"></i>Archiver
                         </button>
                     </form>
                 @endif

@@ -8,7 +8,7 @@
         <a href="{{ route('super-admin.types-actes.index') }}" class="btn btn-sm btn-light mb-2">
             <i class="bi bi-arrow-left"></i> Retour
         </a>
-        <h4 class="mb-0">Modifier : {{ $type->nom }}</h4>
+        <h4 class="mb-0"> <i class="bi bi-pencil-square text-primary me-2"></i>Modifier : {{ $type->nom }}</h4>
     </div>
 </div>
 
@@ -45,7 +45,7 @@
                        value="{{ old('sigle', $type->sigle) }}" maxlength="10">
             </div>
 
-            <div class="col-12"><hr><h6 class="fw-bold">💰 Tarifs</h6></div>
+            <div class="col-12"><hr><h6 class="fw-bold">  <i class="bi bi-cash-coin text-success me-2"></i>Tarifs</h6></div>
 
             <div class="col-md-6">
                 <label class="form-label small fw-bold">Standard MG *</label>
@@ -82,7 +82,10 @@
 {{-- SUPPLÉMENTS                                                 --}}
 {{-- ═══════════════════════════════════════════════════════════ --}}
 <div class="content-card p-4" style="max-width: 800px;">
-    <h5 class="fw-bold mb-3">📎 Suppléments / Sous-types</h5>
+    <h5 class="fw-bold mb-3">
+        <i class="bi bi-paperclip text-primary me-2"></i>Commande Complementaires
+        <span class="badge bg-primary ms-2">{{ $type->supplements->count() }}</span>
+    </h5>
 
     @if($type->supplements->count() > 0)
         <table class="table table-sm">
@@ -120,12 +123,12 @@
             </tbody>
         </table>
     @else
-        <div class="text-muted text-center py-3">Aucun supplément</div>
+        <div class="text-muted text-center py-3">Aucun complementaires</div>
     @endif
 
     <hr class="my-4">
 
-    <h6 class="fw-bold mb-3">➕ Ajouter un supplément</h6>
+    <h6 class="fw-bold mb-3"> Ajouter un complementaires</h6>
     <form method="POST" action="{{ route('super-admin.types-actes.supplements.store', $type->id) }}">
         @csrf
         <div class="row g-2">
@@ -149,7 +152,7 @@
             </div>
         </div>
         <button type="submit" class="btn btn-success mt-3">
-            <i class="bi bi-plus-lg"></i> Ajouter le supplément
+            <i class="bi bi-plus-lg me-1"></i> Ajouter le commande complementaires
         </button>
     </form>
 </div>
